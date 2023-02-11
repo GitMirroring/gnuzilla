@@ -48,8 +48,6 @@ readonly PREFS_IN_FILE=browser/locales/en-US/browser/preferences/preferences.ftl
 readonly PREFS_OUT_FILE=/browser/browser/preferences/preferences.ftl
 
 # build environment, working directory, and outputs
-readonly MIN_RENAME_VER_MAJ=1
-readonly MIN_RENAME_VER_MIN=10
 readonly DATADIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/data
 readonly ICECATVERSION=${FFVERSION}-gnu${GNUVERSION}
 readonly OUTPUT_SOURCEBALL=icecat-${ICECATVERSION}.tar.bz2
@@ -102,6 +100,16 @@ sed()
     fi
 }
 
+rename_files()
+(
+    IFS=''
+    /bin/sed -e h -e 's|[^/]*$||' -e p \
+             -e g -e 's|.*/||'    -e p "$@" |
+        while read -r dir && read -r old && read -r new; do
+            [ x"$old" = x"$new" ] || mv -- "$dir$old" "$dir$new"
+        done
+)
+
 
 ###############################################################################
 # main functions
@@ -126,32 +134,6 @@ validate_env()
  e.g.: 'hg' from the Guix 'mercurial' package
        'hg' from the Parabola 'mercurial' package
        'hg' from the Trisquel 'mercurial' package"
-        return 1
-    fi
-
-    # verify that Perl 'rename' is available and sufficent
-    local rename_cmds=(
-        # NOTE: order is important -- 'util-linux' provides a binary named 'rename'
-        # TODO: consider removing this dependency and using GNU find
-        'rename'      # guix
-        'perl-rename' # arch derivatives
-        'prename'     # debian derivatives
-    )
-    local rename_cmd
-    local required_ver
-    for rename_cmd in ${rename_cmds[@]}
-    do which ${rename_cmd} &> /dev/null && RENAME_CMD=${rename_cmd}
-    done
-    readonly RENAME_CMD
-    if ! ( [[ "$( ${RENAME_CMD} --version )" =~ 'File::Rename version '([0-9]+)\.([0-9]+) ]] &&
-               (( ${BASH_REMATCH[1]} >= MIN_RENAME_VER_MAJ )) &&
-               (( ${BASH_REMATCH[2]} >= MIN_RENAME_VER_MIN )) )
-    then
-        required_ver=${MIN_RENAME_VER_MAJ}.${MIN_RENAME_VER_MIN}
-        echo -e "\nERROR: This script requires the Perl rename program (version >= ${required_ver})
- e.g.: 'rename' from the Guix 'rename' package
-       'perl-rename' from the Parabola 'perl-file-rename' package
-       'prename' from the Trisquel 'rename' package"
         return 1
     fi
 
@@ -575,8 +557,8 @@ apply_branding()
 
 apply_batch_branding()
 {
-    find . | tac | grep -i fennec  | ${RENAME_CMD} --nofullpath -E 's/fennec/icecatmobile/;' -E 's/Fennec/IceCatMobile/;'
-    find . | tac | grep -i firefox | ${RENAME_CMD} --nofullpath -E 's/firefox/icecat/;' -E 's/Firefox/IceCat/;'
+    find . -depth | grep -i fennec  | rename_files -e s/fennec/icecatmobile/g -e s/Fennec/IceCatMobile/g
+    find . -depth | grep -i firefox | rename_files -e s/firefox/icecat/g -e s/Firefox/IceCat/g
 
     echo "Running batch rebranding (this will take a while)"
     local sed_script="
@@ -638,7 +620,7 @@ s/OpenSource/Free Software/g;
 
     sed 's/mozilla-bin/icecat-bin/' -i build/unix/run-mozilla.sh
 
-    find . | tac | grep run-mozilla | ${RENAME_CMD} --nofullpath -E 's/mozilla/icecat/;'
+    find . -depth | grep run-mozilla | rename_files -e s/mozilla/icecat/g
 
     # do not alter useragent/platform/oscpu/etc with fingerprinting countermeasure, it makes things worse
     sed '/ShouldResistFingerprinting/,/}/s/^/\/\//' -i ./netwerk/protocol/http/nsHttpHandler.cpp
