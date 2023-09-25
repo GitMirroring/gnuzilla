@@ -21,11 +21,11 @@
 
 
 # metadata
-readonly FFMAJOR=102
-readonly FFMINOR=15
+readonly FFMAJOR=115
+readonly FFMINOR=3
 readonly FFSUB=0
 readonly GNUVERSION=1
-readonly SOURCEBALL_CHECKSUM='81fa590408f5a3af8f004d839ac47fb4121e05fe717334445cec9ca55d8746af'
+readonly SOURCEBALL_CHECKSUM='8a1dc50b3d81df3b8ee8ef191551a355c9b139f09688a3fb61234b2f6d7670ca'
 readonly SOURCEBALL_SIGNINGKEY='14F26682D0916CDD81E37B6D61B7B526D98F0353'
 readonly FFVERSION=${FFMAJOR}.${FFMINOR}.${FFSUB}
 readonly SOURCEBALL=firefox-${FFVERSION}esr.source.tar.xz
@@ -110,6 +110,82 @@ rename_files()
         done
 )
 
+fail()
+{
+    echo "ERROR:" "$@" 1>&2
+    exit 1
+}
+
+skip_thru_matching_endif()
+{
+    [ $# -eq 0 ] || fail "skip_thru_matching_endif: expected 0 arguments, got $#"
+    local IFS=''
+    while true; do
+        read -r line || fail "skip_thru_matching_endif: matching endif not found"
+        case "$line" in
+            \#if*) skip_thru_matching_endif;;
+            \#endif*) break;;
+        esac
+    done
+}
+
+remove_if_block()
+{
+    [ $# -eq 1 ] || fail "remove_if_block: expected 1 argument, got $#"
+    local start_line="$1"
+    local IFS=''
+    while true; do
+        read -r line || fail "remove_if_block: start line not found"
+        [ "$line" != "$start_line" ] || break
+        echo -E "$line"
+    done
+    skip_thru_matching_endif
+    while read -r line; do
+        echo -E "$line"
+    done
+}
+
+remove_if_block_in_file()
+{
+    [ $# -eq 2 ] || fail "remove_if_block_in_file: expected 2 arguments, got $#"
+    local start_line="$1"
+    local file="$2"
+    remove_if_block "$start_line" < "$file" > "$file.tmp" && mv -- "$file.tmp" "$file"
+}
+
+sort_inner_list()
+{
+    [ $# -eq 2 ] || fail "sort_inner_list: expected 2 arguments, got $#"
+    local start_line="$1"
+    local end_line="$2"
+    local IFS=''
+
+    while true; do
+        read -r line || fail "sort_inner_list: start line not found"
+        echo -E "$line"
+        [ "$line" != "$start_line" ] || break
+    done
+
+    while true; do
+        read -r line || fail "sort_inner_list: end line not found"
+        [ "$line" != "$end_line" ] || break
+        echo -E "$line"
+    done | sort
+
+    echo -E "$end_line"
+    while read -r line; do
+        echo -E "$line"
+    done
+}
+
+sort_inner_list_in_file()
+{
+    [ $# -eq 3 ] || fail "sort_inner_list_in_file: expected 3 arguments, got $#"
+    local start_line="$1"
+    local end_line="$2"
+    local file="$3"
+    sort_inner_list "$start_line" "$end_line" < "$file" > "$file.tmp" && mv -- "$file.tmp" "$file"
+}
 
 ###############################################################################
 # main functions
@@ -314,7 +390,7 @@ configure()
     # These are not condensed into a single sed script so that it
     # fails on individual commands that didn't change the source
     local activity_stream=browser/components/newtab/lib/ActivityStream.jsm
-    sed '/^const DEFAULT_SITES/,/^])\;/c const DEFAULT_SITES = new Map\([[""]]\);' -i browser/components/newtab/lib/DefaultSites.jsm
+    sed '/^const DEFAULT_SITES/,/^])\;/c const DEFAULT_SITES = new Map\([[""]]\);' -i browser/components/newtab/lib/DefaultSites.sys.mjs
     sed '/"showSponsored"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/  "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/"section\.highlights\.includePocket"/,/value/s/value: true/value: false/' -i $activity_stream
@@ -326,7 +402,7 @@ configure()
     sed '/layout_endpoint:/,/http/s/"http.*/"",/' -i $activity_stream
     sed '/name: "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/name: "system\.topstories"/,/},/s/.*!!locales.*/false/' -i $activity_stream
-    sed 's/.Ubuntu., //' -i browser/components/newtab/css/activity-stream*.css
+    sed 's/Ubuntu, //' -i browser/components/newtab/css/activity-stream*.css
 
     sed '/^]$/d' -i browser/components/newtab/data/content/tippytop/top_sites.json
     sed 's/}$/},/' -i browser/components/newtab/data/content/tippytop/top_sites.json
@@ -433,7 +509,7 @@ EOF
     /bin/sed '/appmenuitem-settings/,+1s/\(.*.label = \)\(.*\)/\1\2\nappmenuitem-icecat-settings =\n\1IceCat \2/' -i ./l10n/*/browser/browser/appmenu.ftl ./browser/locales/en-US/browser/appmenu.ftl
 
     # Disable remote settings server
-    sed '/REMOTE_SETTINGS_SERVER_URL/,/^$/s/http.*"/"/' -i toolkit/modules/AppConstants.jsm
+    sed '/REMOTE_SETTINGS_SERVER_URL/,/^$/s/http.*"/"/' -i toolkit/modules/AppConstants.sys.mjs
 
     # Build on trisquel
     sed '/^DEBIAN_DISTROS/s/$/\n    "trisquel",/' -i ./python/mozboot/mozboot/bootstrap.py
@@ -441,9 +517,6 @@ EOF
 
 configure_search()
 {
-    # Leak less info to DuckDuckGo.
-    sed '/"params"/,/],/d' -i browser/components/search/extensions/ddg/manifest.json
-
     # Default DDG to HTML search.
     cp -a browser/components/search/extensions/ddg browser/components/search/extensions/ddg-js
     sed 's|/duckduckgo.com/|/html.duckduckgo.com/html/|' -i browser/components/search/extensions/ddg/manifest.json
@@ -455,7 +528,7 @@ configure_search()
 
 
     # Process various JSON pre-configuration dumps.
-    python3 ../../tools/process-json-files.py . browser/components/extensions/schemas/
+    python3 "${DATADIR}"/../tools/process-json-files.py . browser/components/extensions/schemas/
 }
 
 configure_mobile()
@@ -526,10 +599,9 @@ apply_branding()
     rm -rf ./browser/metro ./addon-sdk/source/doc/static-files/media ./b2g
 
     # Custom bookmarks
-    sed '/ifndef/,/endif/d' -i browser/base/content/default-bookmarks.html
+    remove_if_block_in_file "#ifndef NIGHTLY_BUILD" browser/base/content/default-bookmarks.html
 
     # Custom legal about pages
-    find l10n -wholename '*/brand.dtd' | xargs /bin/sed 's/trademarkInfo.part1.*/trademarkInfo.part1 "The IceCat logo is Copyright 2008-2015 Free Software Foundation, released under the terms of the GNU Lesser General Public License, version 3 or any later version.">/' -i
     find l10n -wholename '*/brand.ftl' | xargs /bin/sed 's/^trademarkInfo = .*/trademarkInfo = The IceCat logo is Copyright 2008-2015 Free Software Foundation, released under the terms of the GNU Lesser General Public License, version 3 or any later version./' -i
     local string
     for string in rights-intro-point-2 rights-intro-point-3 rights-intro-point-4 rights-intro-point-5 rights-intro-point-6 rights-webservices rights-safebrowsing
@@ -553,6 +625,22 @@ apply_branding()
     # Hide extra links in about box
     sed '/releaseNotes.link/d' -i ./browser/base/content/aboutDialog.xhtml
     sed '/description.*helpus/,/description/d' -i ./browser/base/content/aboutDialog.xhtml
+
+    # Remove tab-pickup elements from firefoxview
+    local sed_script='
+:top
+/<script.*tab-pickup-/,/<\/script>/d
+/<details.*tab-pickup-/,/<\/details>/d
+# The following arranges to append an additional line into
+# the pattern space and jump back to the top of the script
+# whenever "<" is present but ">" is not.
+/</{s/>/>/
+t
+N
+b top
+}
+'
+    sed -i "${sed_script}" browser/components/firefoxview/firefoxview.html
 }
 
 apply_batch_branding()
@@ -623,7 +711,7 @@ s/OpenSource/Free Software/g;
     find . -depth | grep run-mozilla | rename_files -e s/mozilla/icecat/g
 
     # do not alter useragent/platform/oscpu/etc with fingerprinting countermeasure, it makes things worse
-    sed '/ShouldResistFingerprinting/,/}/s/^/\/\//' -i ./netwerk/protocol/http/nsHttpHandler.cpp
+    sed '/if (aShouldResistFingerprinting/,/}/s/^/\/\//' -i ./netwerk/protocol/http/nsHttpHandler.cpp
     sed '/If fingerprinting resistance is on/,/}/s/^/\/\//' -i ./dom/base/Navigator.cpp
 
     # Leave user agent as Firefox
@@ -633,8 +721,11 @@ s/OpenSource/Free Software/g;
     find . -name region.properties | xargs -i /bin/sed 's_https://www\.mibbit.*__' -i {}
 
     # Set migrator scripts
-    cp browser/components/migration/IceCatProfileMigrator.jsm browser/components/migration/FirefoxProfileMigrator.jsm
-    sed 's/IceCat/Firefox/g; s/icecat/firefox/g' -i browser/components/migration/FirefoxProfileMigrator.jsm
+    cp browser/components/migration/IceCatProfileMigrator.sys.mjs browser/components/migration/FirefoxProfileMigrator.sys.mjs
+    sed 's/IceCat/Firefox/g; s/icecat/firefox/g' -i browser/components/migration/FirefoxProfileMigrator.sys.mjs
+
+    # Sort the list of DevToolsModules, which becomes unsorted by our rebranding
+    sort_inner_list_in_file "DevToolsModules(" ")" devtools/client/netmonitor/src/connector/moz.build
 
     # Copy js settings
     cat "${DATADIR}"/settings.js >> browser/app/profile/icecat.js

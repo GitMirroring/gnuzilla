@@ -146,6 +146,8 @@ pref("camera.control.autofocus_moving_callback.enabled", false);
 pref("network.http.speculative-parallel-limit", 0);
 // No search suggestions
 pref("browser.urlbar.userMadeSearchSuggestionsChoice", true);
+pref("browser.urlbar.groupLabels.enabled", false);
+pref("browser.urlbar.merino.enabled", false);
 pref("browser.search.suggest.enabled", false);
 // Always ask before restoring the browsing session
 pref("browser.sessionstore.max_resumed_crashes", 0);
@@ -158,6 +160,9 @@ pref("extensions.shield-recipe-client.enabled", false);
 pref("browser.newtabpage.directory.source", "");
 pref("browser.newtabpage.directory.ping", "");
 pref("browser.newtabpage.introShown", true);
+pref("browser.topsites.contile.enabled", false);
+pref("browser.topsites.contile.endpoint", "");
+pref("browser.topsites.contile.sov.enabled", false);
 // Always ask before restoring the browsing session
 pref("browser.sessionstore.max_resumed_crashes", 0);
 // Disable tracking protection by default, as it makes automated connections to fetch lists (not doing this until the newtab privacy block is reimplemented)
@@ -202,6 +207,7 @@ pref("gecko.handlerService.schemes.webcal.0.name", "");
 pref("gecko.handlerService.schemes.webcal.0.uriTemplate", "");
 pref("gecko.handlerService.schemes.irc.0.name", "");
 pref("gecko.handlerService.schemes.irc.0.uriTemplate", "");
+pref("browser.partnerlink.attributionURL", "");
 
 // Disable channel updates
 pref("app.update.enabled", false);
@@ -246,19 +252,19 @@ pref("extensions.blocklist.enabled", false);
 pref("font.default.x-western", "sans-serif");
 
 // Preferences for the Get Add-ons panel
-pref ("extensions.webservice.discoverURL", "https://gnuzilla.gnu.org/extensions");
-pref ("extensions.getAddons.search.url", "https://gnuzilla.gnu.org/extensions");
-pref ("extensions.getAddons.search.browseURL", "https://gnuzilla.gnu.org/extensions");
-pref ("extensions.getAddons.get.url", "https://gnuzilla.gnu.org/extensions");
-pref ("extensions.getAddons.link.url", "https://gnuzilla.gnu.org/extensions");
-pref ("extensions.getAddons.discovery.api_url", "https://gnuzilla.gnu.org/extensions");
+pref ("extensions.webservice.discoverURL", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.getAddons.search.url", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.getAddons.search.browseURL", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.getAddons.get.url", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.getAddons.link.url", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.getAddons.discovery.api_url", "https://gnuzilla.gnu.org/mozzarella");
 
 pref ("extensions.systemAddon.update.url", "");
 pref ("extensions.systemAddon.update.enabled", false);
 
 // FIXME: find better URLs for these:
-pref ("extensions.getAddons.langpacks.url", "https://gnuzilla.gnu.org/extensions");
-pref ("lightweightThemes.getMoreURL", "https://gnuzilla.gnu.org/extensions");
+pref ("extensions.getAddons.langpacks.url", "https://gnuzilla.gnu.org/mozzarella");
+pref ("lightweightThemes.getMoreURL", "https://gnuzilla.gnu.org/mozzarella");
 pref ("browser.geolocation.warning.infoURL", "");
 pref ("browser.xr.warning.infoURL", "");
 pref ("app.feedback.baseURL", "");
@@ -368,6 +374,9 @@ pref("browser.onboarding.newtour", "performance,private,addons,customize,default
 pref("browser.onboarding.updatetour", "performance,library,singlesearch,customize");
 pref("browser.onboarding.enabled", false);
 
+// Disable firefox-view (renamed to icecat-view by the batch renaming)
+pref("browser.tabs.icecat-view", false);
+
 // New tab settings
 pref("browser.newtabpage.activity-stream.default.sites", "https://www.gnu.org/,https://www.fsf.org/,https://directory.fsf.org/,https://libreplanet.org/,https://trisquel.info/,https://www.wikipedia.org/,https://www.wikinews.org/");
 pref("browser.newtabpage.activity-stream.showTopSites",true);
@@ -385,7 +394,9 @@ pref("dom.webnotifications.serviceworker.enabled",false);
 pref("dom.push.enabled",false); 
 
 // Disable recommended extensions
-pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr", false);
+pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons", false);
+pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features", false);
+pref("browser.newtabpage.activity-stream.asrouter.providers.snippets", "");
 pref("extensions.htmlaboutaddons.discover.enabled", false);
 pref("extensions.htmlaboutaddons.recommendations.enabled", false);
 
@@ -407,3 +418,7 @@ pref("browser.contentblocking.report.vpn-promo.url", "");
 pref("browser.contentblocking.report.vpn-android.url", "");
 pref("browser.contentblocking.report.vpn-ios.url", "");
 pref("browser.privatebrowsing.promoEnabled", false);
+pref("browser.privatebrowsing.vpnpromourl", "");
+pref("browser.vpn_promo.enabled", false);
+pref("browser.promo.focus.enabled", false);
+pref("browser.promo.pin.enabled", false);
