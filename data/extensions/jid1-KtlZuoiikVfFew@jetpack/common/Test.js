@@ -2,6 +2,7 @@
 * GNU LibreJS - A browser add-on to block nonfree nontrivial JavaScript.
 *
 * Copyright (C) 2018 Giorgio Maone <giorgio@maone.net>
+* Copyright (C) 2022 Yuchen Pei <id@ypei.org>
 *
 * This file is part of GNU LibreJS.
 *
@@ -20,27 +21,25 @@
 */
 
 'use strict';
-var Test = (() => {
-  const RUNNER_URL = browser.extension.getURL('/test/SpecRunner.html');
+const Test = (() => {
+  const RUNNER_URL = browser.runtime.getURL('/test/SpecRunner.html');
   return {
     /*
       returns RUNNER_URL if it's a test-enabled build or an about:debugging
       temporary extension session, null otherwise
     */
     async getURL() {
-      let url = RUNNER_URL;
       try {
-        await fetch(url);
+        await fetch(RUNNER_URL);
+        return RUNNER_URL;
       } catch (e) {
-        url = null;
+        return null;
       }
-      this.getURL = () => url;
-      return url;
     },
 
     async getTab(activate = false) {
-      let url = await this.getURL();
-      let tab = url ? (await browser.tabs.query({ url }))[0] ||
+      const url = await this.getURL();
+      const tab = url ? (await browser.tabs.query({ url }))[0] ||
         (await browser.tabs.create({ url }))
         : null;
       if (tab && activate) {
