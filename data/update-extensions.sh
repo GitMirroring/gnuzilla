@@ -29,9 +29,5 @@ done
 
 sed '/autoUpdateRulesets/s/true/false/' -i extensions/https-everywhere@eff.org/pages/options/ux.js extensions/https-everywhere@eff.org/background-scripts/update.js
 
-for ID in viewtube@extension; do
-  sed 's/^{/{\n  "applications": { "gecko": { "id": "'$ID'" } },/' -i extensions/$ID/manifest.json
-done
-
 find extensions -name cose.manifest -delete
 find extensions -name cose.sig -delete
