@@ -21,6 +21,10 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+let defaultNbsWhitelistDomain = "duckduckgo.com";
+let defaultNbsWhitelist = {};
+defaultNbsWhitelist[defaultNbsWhitelistDomain] = true;
+
 async function installUpdate() {
 	/**
 	 * 0.3+ storage
@@ -363,7 +367,7 @@ async function installUpdate() {
 				};
 			}
 			item.fpDetectionOn = true;
-			item.nbsWhitelist = item.whitelistedHosts ? item.whitelistedHosts : {};
+			item.nbsWhitelist = item.whitelistedHosts ? item.whitelistedHosts : defaultNbsWhitelist;
 			delete item.whitelistedHosts;
 			item.nbsSettings = {
 				notifications: 1
@@ -478,6 +482,7 @@ async function installUpdate() {
 					l.wasm = 1;
 				}
 			}
+			item.nbsWhitelist[defaultNbsWhitelistDomain] = true;
 			item.version = 7;
 		}
 
@@ -524,7 +529,7 @@ async function checkAndSaveConfig(conf, check_default = true) {
 		conf.__default__ = "2";
 	}
 	checkExistAndType("domains", "object", {});
-	checkExistAndType("nbsWhitelist", "object", {});
+	checkExistAndType("nbsWhitelist", "object", defaultNbsWhitelist);
 	checkExistAndType("nbsSettings", "object", {});
 	checkSettingRange("nbsSettings", "blocking", [0,1], 1);
 	checkSettingRange("nbsSettings", "notifications", [0,1], 1);
