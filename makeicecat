@@ -25,6 +25,7 @@ readonly FFMAJOR=115
 readonly FFMINOR=3
 readonly FFSUB=1
 readonly GNUVERSION=1
+readonly OUTPUT_SOURCEBALL_DATE=2023-09-28
 readonly SOURCEBALL_CHECKSUM='7dda256e49ca054f72d495914a2d82533518d4472e06f45f85ed763897aa1e53'
 readonly SOURCEBALL_SIGNINGKEY='14F26682D0916CDD81E37B6D61B7B526D98F0353'
 readonly FFVERSION=${FFMAJOR}.${FFMINOR}.${FFSUB}
@@ -187,6 +188,15 @@ sort_inner_list_in_file()
     sort_inner_list "$start_line" "$end_line" < "$file" > "$file.tmp" && mv -- "$file.tmp" "$file"
 }
 
+canonicalize_modes()
+{
+    for dir; do
+        find "$dir" -type d -execdir chmod 755 '{}' ';'
+        find "$dir" -type f -perm -u+x -execdir chmod 755 '{}' ';'
+        find "$dir" -type f \! -perm -u+x -execdir chmod 644 '{}' ';'
+    done
+}
+
 ###############################################################################
 # main functions
 ###############################################################################
@@ -246,6 +256,11 @@ validate_env()
 
 prepare_env()
 {
+    # For reproducibility
+    export LC_ALL=C
+    export TZ=UTC
+    umask 022
+
     mkdir -p output
     mkdir -p output/l10n
 
@@ -298,22 +313,28 @@ fetch_l10n()
 {
     cd l10n
 
-    while read lang; do
+    local file="../${SOURCEDIR}/browser/locales/l10n-changesets.json"
+    local py_script='
+import json
+import sys
+data = json.load(sys.stdin)
+for lang in data:
+  print (lang, data[lang]["revision"])
+'
+    python3 -c "${py_script}" < "${file}" | while read lang revision ; do
         # download only one language-pack in devel mode
         ! (( DEVEL )) || [[ "$(echo ${lang} | cut -d' ' -f1)" == "es-ES" ]] || continue
-
-        lang=$(echo ${lang} | cut -d' ' -f1)
 
         # download only language-packs which are not already in the working directory
         if [[ -n "${lang}" && "${lang}" != 'en-US' && ! -f ${lang}/${L10N_DTD_FILE} ]]
         then
             echo "Cloning '${lang}' language repository"
-            hg clone ${L10N_URL}/${lang}
+            hg clone --rev ${revision} ${L10N_URL}/${lang}
             mkdir -p ${lang}/${L10N_PREFS_DIR}
             touch ${lang}/${L10N_DTD_FILE}
             rm -rf ${lang}/.hg*
         fi
-    done < ../${SOURCEDIR}/browser/locales/shipped-locales
+    done
     cd ..
     cp -a l10n ${SOURCEDIR}/
 
@@ -326,6 +347,8 @@ fetch_l10n()
     cd ..
     cp -a compare-locales ${SOURCEDIR}/l10n/
     rm -rf ${SOURCEDIR}/l10n/compare-locales/{.git,.hg}*
+
+    canonicalize_modes ${SOURCEDIR}/l10n
 }
 
 apply_patches()
@@ -356,7 +379,7 @@ apply_patches()
         fi
     done
 
-    cp "${DATADIR}"/Changelog.IceCat "${DATADIR}"/README.IceCat .
+    install -m 644 "${DATADIR}"/Changelog.IceCat "${DATADIR}"/README.IceCat .
 }
 
 configure()
@@ -502,8 +525,8 @@ EOF
 }
 EOF
 
-    cp "${DATADIR}"/newtab/*.ico browser/components/newtab/data/content/tippytop/favicons/
-    cp "${DATADIR}"/newtab/*.png browser/components/newtab/data/content/tippytop/images/
+    install -m 644 "${DATADIR}"/newtab/*.ico browser/components/newtab/data/content/tippytop/favicons/
+    install -m 644 "${DATADIR}"/newtab/*.png browser/components/newtab/data/content/tippytop/images/
 
     # IceCat menu l10n
     /bin/sed '/appmenuitem-settings/,+1s/\(.*.label = \)\(.*\)/\1\2\nappmenuitem-icecat-settings =\n\1IceCat \2/' -i ./l10n/*/browser/browser/appmenu.ftl ./browser/locales/en-US/browser/appmenu.ftl
@@ -519,6 +542,7 @@ configure_search()
 {
     # Default DDG to HTML search.
     cp -a browser/components/search/extensions/ddg browser/components/search/extensions/ddg-js
+    canonicalize_modes browser/components/search/extensions/ddg-js
     sed 's|/duckduckgo.com/|/html.duckduckgo.com/html/|' -i browser/components/search/extensions/ddg/manifest.json
     sed 's|DuckDuckGo|DuckDuckGo (JavaScript)|' -i browser/components/search/extensions/ddg-js/manifest.json
     sed 's|ddg@|ddg-js@|' -i browser/components/search/extensions/ddg-js/manifest.json
@@ -567,12 +591,13 @@ EOF
 
     return # FIXME: TODO: adapt the following to ESR 78.x
 
-    cp "${DATADIR}"/preferences_vendor.xml ./mobile/android/app/src/main/res/xml/preferences_vendor.xml
+    install -m 644 "${DATADIR}"/preferences_vendor.xml ./mobile/android/app/src/main/res/xml/preferences_vendor.xml
 
     sed '/public static void checkAndNotifyPolicy/ s/{/{ if(true) return;/; /private static void notifyDataPolicy/ s/{/{ if(true) return;/ ' -i mobile/android/base/java/org/mozilla/gecko/DataReportingNotification.java
 
-    cp -a "${DATADIR}"/android-images/core/* mobile/android/themes/core/images/
+    install -m 644 "${DATADIR}"/android-images/core/* mobile/android/themes/core/images/
     cp -a "${DATADIR}"/android-images/resources mobile/android/base
+    canonicalize_modes mobile/android/base
 
     sed '/aboutDetails/,/div/d; /privacyURL/d' mobile/android/chrome/content/about.xhtml -i
 
@@ -591,6 +616,7 @@ apply_branding()
     cp -a "${DATADIR}"/branding/icecatmobile/ mobile/android/branding/official
     cp -a "${DATADIR}"/branding/icecatmobile/ mobile/android/branding/unofficial
     cp -a "${DATADIR}"/branding/icecatmobile/ mobile/android/branding/nightly
+    canonicalize_modes browser/branding mobile/android/branding
 
     # Disable preprocessor
     sed 's/_PP//' -i browser/branding/branding-common.mozbuild
@@ -612,12 +638,12 @@ apply_branding()
     do
         find -wholename '*/browser/aboutDialog.ftl' | xargs sed -i "s/^${string}.*/${string} = /"
     done
-    cp "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights.xhtml
-    cp "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights-unbranded.xhtml
+    install -m 644 "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights.xhtml
+    install -m 644 "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights-unbranded.xhtml
     sed -i 's|<a href="http://www\.mozilla\.org/">Mozilla Project</a>|<a href="http://www.gnu.org/">GNU Project</a>|g' browser/base/content/overrides/app-license.html
 
     # Custom logo for about:preferences?entrypoint=menupanel#sync
-    cp "${DATADIR}"/branding/sync.png browser/themes/shared/fxa/logo.png
+    install -m 644 "${DATADIR}"/branding/sync.png browser/themes/shared/fxa/logo.png
 
     # Hide mobile promo
     echo ".fxaMobilePromo {  display: none !important; }" >> browser/themes/shared/preferences/preferences.inc.css
@@ -783,36 +809,36 @@ apply_icons_branding()
     local ma50="${DATADIR}"/android-images/core/marketplace-logo.png
     local ma128="${DATADIR}"/android-images/resources/drawable-mdpi/marketplace.png
 
-    cp $ff16 dom/canvas/test/crossorigin/image.png
-    cp $ff16 image/test/unit/image1.png
-    cp $jpglogo image/test/unit/image1png16x16.jpg
-    cp $jpglogo image/test/unit/image1png64x64.jpg
-    cp $ff16 image/test/unit/image2jpg16x16.png
-    cp $ff16 image/test/unit/image2jpg16x16-win.png
-    cp $ff32 image/test/unit/image2jpg32x32.png
-    cp $ff32 image/test/unit/image2jpg32x32-win.png
-    cp $ff16 dom/canvas/test/crossorigin/image-allow-credentials.png
-    cp $ff16 dom/html/test/image-allow-credentials.png
-    cp $ff16 dom/canvas/test/crossorigin/image-allow-star.png
-    cp $ff16 toolkit/components/places/tests/favicons/expected-favicon-big32.jpg.png
-    cp $ff16 toolkit/components/places/tests/favicons/expected-favicon-big64.png.png
-    cp $jpglogo toolkit/components/places/tests/favicons/favicon-big32.jpg
-    cp $ff64 toolkit/components/places/tests/favicons/favicon-big64.png
-    cp $favicon image/test/unit/image4gif16x16bmp24bpp.ico
-    cp $favicon image/test/unit/image4gif16x16bmp32bpp.ico
-    cp $favicon image/test/unit/image4gif32x32bmp24bpp.ico
-    cp $favicon image/test/unit/image4gif32x32bmp32bpp.ico
-    cp $jpglogo image/test/unit/image1png16x16.jpg
-    cp $jpglogo image/test/unit/image2.jpg
-    cp $jpglogo image/test/unit/image2jpg16x16cropped.jpg
-    cp $jpglogo image/test/unit/image2jpg16x16cropped2.jpg
-    cp $jpglogo image/test/unit/image2jpg16x32cropped3.jpg
-    cp $jpglogo image/test/unit/image2jpg16x32scaled.jpg
-    cp $jpglogo image/test/unit/image2jpg32x16cropped4.jpg
-    cp $jpglogo image/test/unit/image2jpg32x16scaled.jpg
-    cp $jpglogo image/test/unit/image2jpg32x32.jpg
-    cp $ff32 image/test/unit/image2jpg32x32.png
-    cp $ff32 image/test/unit/image2jpg32x32-win.png
+    install -m 644 $ff16 dom/canvas/test/crossorigin/image.png
+    install -m 644 $ff16 image/test/unit/image1.png
+    install -m 644 $jpglogo image/test/unit/image1png16x16.jpg
+    install -m 644 $jpglogo image/test/unit/image1png64x64.jpg
+    install -m 644 $ff16 image/test/unit/image2jpg16x16.png
+    install -m 644 $ff16 image/test/unit/image2jpg16x16-win.png
+    install -m 644 $ff32 image/test/unit/image2jpg32x32.png
+    install -m 644 $ff32 image/test/unit/image2jpg32x32-win.png
+    install -m 644 $ff16 dom/canvas/test/crossorigin/image-allow-credentials.png
+    install -m 644 $ff16 dom/html/test/image-allow-credentials.png
+    install -m 644 $ff16 dom/canvas/test/crossorigin/image-allow-star.png
+    install -m 644 $ff16 toolkit/components/places/tests/favicons/expected-favicon-big32.jpg.png
+    install -m 644 $ff16 toolkit/components/places/tests/favicons/expected-favicon-big64.png.png
+    install -m 644 $jpglogo toolkit/components/places/tests/favicons/favicon-big32.jpg
+    install -m 644 $ff64 toolkit/components/places/tests/favicons/favicon-big64.png
+    install -m 644 $favicon image/test/unit/image4gif16x16bmp24bpp.ico
+    install -m 644 $favicon image/test/unit/image4gif16x16bmp32bpp.ico
+    install -m 644 $favicon image/test/unit/image4gif32x32bmp24bpp.ico
+    install -m 644 $favicon image/test/unit/image4gif32x32bmp32bpp.ico
+    install -m 644 $jpglogo image/test/unit/image1png16x16.jpg
+    install -m 644 $jpglogo image/test/unit/image2.jpg
+    install -m 644 $jpglogo image/test/unit/image2jpg16x16cropped.jpg
+    install -m 644 $jpglogo image/test/unit/image2jpg16x16cropped2.jpg
+    install -m 644 $jpglogo image/test/unit/image2jpg16x32cropped3.jpg
+    install -m 644 $jpglogo image/test/unit/image2jpg16x32scaled.jpg
+    install -m 644 $jpglogo image/test/unit/image2jpg32x16cropped4.jpg
+    install -m 644 $jpglogo image/test/unit/image2jpg32x16scaled.jpg
+    install -m 644 $jpglogo image/test/unit/image2jpg32x32.jpg
+    install -m 644 $ff32 image/test/unit/image2jpg32x32.png
+    install -m 644 $ff32 image/test/unit/image2jpg32x32-win.png
 }
 
 prepare_macos_packaging()
@@ -865,6 +891,7 @@ EOF
     done
 
     cp "${DATADIR}"/extensions/ extensions/gnu -a
+    canonicalize_modes extensions/gnu
 
     cat << EOF >> browser/app/Makefile.in
 libs::
@@ -896,12 +923,12 @@ configure_onboarding()
     return # FIXME: TODO: adapt the following to ESR 78.x
 
     mkdir -p browser/extensions/onboarding browser/extensions/onboarding/content browser/extensions/onboarding/locales/en-US
-    cp "${DATADIR}"/onboarding/bootstrap.js browser/extensions/onboarding
-    cp "${DATADIR}"/onboarding/onboarding.js browser/extensions/onboarding/content
-    cp "${DATADIR}"/onboarding/onboarding.properties browser/extensions/onboarding/locales/en-US
+    install -m 644 "${DATADIR}"/onboarding/bootstrap.js browser/extensions/onboarding
+    install -m 644 "${DATADIR}"/onboarding/onboarding.js browser/extensions/onboarding/content
+    install -m 644 "${DATADIR}"/onboarding/onboarding.properties browser/extensions/onboarding/locales/en-US
     for locale in $(ls -1 "${DATADIR}"/onboarding/locales/); do
         mkdir -p l10n/$locale/browser/extensions/onboarding || true
-        cp "${DATADIR}"/onboarding/locales/$locale/onboarding.properties l10n/$locale/browser/extensions/onboarding
+        install -m 644 "${DATADIR}"/onboarding/locales/$locale/onboarding.properties l10n/$locale/browser/extensions/onboarding
     done
 }
 
@@ -920,7 +947,10 @@ finalize_sourceball()
 {
     cd ..
     echo Packaging tarball
-    tar cfj ${OUTPUT_SOURCEBALL} ${SOURCEDIR}
+    tar cfa ${OUTPUT_SOURCEBALL} \
+	--format=gnu --sort=name --owner=0:0 --group=0:0 \
+	--mtime="${OUTPUT_SOURCEBALL_DATE}" \
+	${SOURCEDIR}
 }
 
 
