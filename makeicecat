@@ -71,7 +71,7 @@ sedhelper()
     local md5=$(md5sum "${file}")
 
     echo Running modification-aware sed: sed "${expr}" -i "${file}"
-    /bin/sed "${expr}" -i "${file}"
+    command sed "${expr}" -i "${file}"
     if [ "${md5}" = "$(md5sum "${file}")" ]; then
         echo File "${file}" was not modified, stopping.
         exit 1
@@ -81,8 +81,8 @@ sedhelper()
 sed()
 {
     if ! echo $@ | grep -qw '\-i'; then
-        echo Running fallback sed: /bin/sed "$@"
-        /bin/sed "$@"
+        echo Running fallback sed: sed "$@"
+        command sed "$@"
     else
         [ 1"$1" = "1-i" ] && shift
 
@@ -104,8 +104,8 @@ sed()
 rename_files()
 (
     IFS=''
-    /bin/sed -e h -e 's|[^/]*$||' -e p \
-             -e g -e 's|.*/||'    -e p "$@" |
+    command sed -e h -e 's|[^/]*$||' -e p \
+                -e g -e 's|.*/||'    -e p "$@" |
         while read -r dir && read -r old && read -r new; do
             [ x"$old" = x"$new" ] || mv -- "$dir$old" "$dir$new"
         done
@@ -403,7 +403,7 @@ configure()
     local sort_tmpfile="$(mktemp -t makeicecat-XXXXXXXXXX)"
     for plugin_file in $(find | grep searchplugins/list.txt)
     do
-        /bin/sed /^$/d -i $plugin_file
+        command sed /^$/d -i $plugin_file
         sort -u $plugin_file > ${sort_tmpfile}
         mv ${sort_tmpfile} $plugin_file
         echo >> $plugin_file
@@ -529,7 +529,7 @@ EOF
     install -m 644 "${DATADIR}"/newtab/*.png browser/components/newtab/data/content/tippytop/images/
 
     # IceCat menu l10n
-    /bin/sed '/appmenuitem-settings/,+1s/\(.*.label = \)\(.*\)/\1\2\nappmenuitem-icecat-settings =\n\1IceCat \2/' -i ./l10n/*/browser/browser/appmenu.ftl ./browser/locales/en-US/browser/appmenu.ftl
+    command sed '/appmenuitem-settings/,+1s/\(.*.label = \)\(.*\)/\1\2\nappmenuitem-icecat-settings =\n\1IceCat \2/' -i ./l10n/*/browser/browser/appmenu.ftl ./browser/locales/en-US/browser/appmenu.ftl
 
     # Disable remote settings server
     sed '/REMOTE_SETTINGS_SERVER_URL/,/^$/s/http.*"/"/' -i toolkit/modules/AppConstants.sys.mjs
@@ -628,7 +628,7 @@ apply_branding()
     remove_if_block_in_file "#ifndef NIGHTLY_BUILD" browser/base/content/default-bookmarks.html
 
     # Custom legal about pages
-    find l10n -wholename '*/brand.ftl' | xargs /bin/sed 's/^trademarkInfo = .*/trademarkInfo = The IceCat logo is Copyright 2008-2015 Free Software Foundation, released under the terms of the GNU Lesser General Public License, version 3 or any later version./' -i
+    find l10n -wholename '*/brand.ftl' | xargs sed 's/^trademarkInfo = .*/trademarkInfo = The IceCat logo is Copyright 2008-2015 Free Software Foundation, released under the terms of the GNU Lesser General Public License, version 3 or any later version./' -i
     local string
     for string in rights-intro-point-2 rights-intro-point-3 rights-intro-point-4 rights-intro-point-5 rights-intro-point-6 rights-webservices rights-safebrowsing
     do
@@ -711,9 +711,9 @@ s|https://www\\.mozilla\\.org/icecat/?utm_source=synceol|https://www.mozilla.org
 
 s|www\\.gnu\\.org/software/gnuzilla/icecat-help|libreplanet.org/wiki/Group:IceCat/Help|g;
 "
-    find . -type f -not -iregex '.*changelog.*' -not -iregex '.*copyright.*' -not -iregex '.*third_party/rust.*' -execdir /bin/sed --follow-symlinks -i "${sed_script}" '{}' ';'
+    find . -type f -not -iregex '.*changelog.*' -not -iregex '.*copyright.*' -not -iregex '.*third_party/rust.*' -execdir sed --follow-symlinks -i "${sed_script}" '{}' ';'
 
-    find l10n -type f -execdir /bin/sed --follow-symlinks -i "s/from GNU/from Mozilla/g" '{}' ';'
+    find l10n -type f -execdir sed --follow-symlinks -i "s/from GNU/from Mozilla/g" '{}' ';'
 
     sed_script="
 s/free and open source software/Free Software/g;
@@ -727,7 +727,7 @@ s/OpenSource/Free Software/g;
 
     local extension
     for extension in dtd ftl inc properties; do
-        find . -type f -name "*$extension" -execdir /bin/sed --follow-symlinks -i "${sed_script}" '{}' ';'
+        find . -type f -name "*$extension" -execdir sed --follow-symlinks -i "${sed_script}" '{}' ';'
     done
 
     sed 's/which are both/which are/; s/free<\/a> and/Free Software<\/a>./; />open source</d; s/free and open source licenses/Free Software licenses/ ' -i toolkit/content/license.html
@@ -744,7 +744,7 @@ s/OpenSource/Free Software/g;
     sed "/mCompatIceCat.AssignLiteral/ s:IceCat/:Firefox/:" -i netwerk/protocol/http/nsHttpHandler.cpp
     sed "s/IceCat/Firefox/g" -i toolkit/components/resistfingerprinting/nsRFPService.cpp
 
-    find . -name region.properties | xargs -i /bin/sed 's_https://www\.mibbit.*__' -i {}
+    find . -name region.properties | xargs -i sed 's_https://www\.mibbit.*__' -i {}
 
     # Set migrator scripts
     cp browser/components/migration/IceCatProfileMigrator.sys.mjs browser/components/migration/FirefoxProfileMigrator.sys.mjs
@@ -914,8 +914,8 @@ EOF
 # IceCat extras
 browser/chrome/browser/content/browser/aboutaccounts/images/fox.png
 EOF
-    find extensions/gnu/ | sort | sed s=extensions/gnu=browser/extensions= >> ./browser/installer/allowed-dupes.mn
-    find extensions/gnu/ | sort | sed s=extensions/gnu=distribution/extensions= >> mobile/android/installer/allowed-dupes.mn
+    find extensions/gnu/ | sort | command sed s=extensions/gnu=browser/extensions= >> ./browser/installer/allowed-dupes.mn
+    find extensions/gnu/ | sort | command sed s=extensions/gnu=distribution/extensions= >> mobile/android/installer/allowed-dupes.mn
 }
 
 configure_onboarding()
@@ -940,7 +940,7 @@ apply_bugfixes()
     #(cd toolkit/crashreporter/google-breakpad; automake)
 
     # Fix CVE-2012-3386
-    /bin/sed 's/chmod a+w/chmod u+w/' -i ./js/src/ctypes/libffi/Makefile.in ./toolkit/crashreporter/google-breakpad/Makefile.in ./toolkit/crashreporter/google-breakpad/src/third_party/glog/Makefile.in || true
+    command sed 's/chmod a+w/chmod u+w/' -i ./js/src/ctypes/libffi/Makefile.in ./toolkit/crashreporter/google-breakpad/Makefile.in ./toolkit/crashreporter/google-breakpad/src/third_party/glog/Makefile.in || true
 }
 
 finalize_sourceball()
