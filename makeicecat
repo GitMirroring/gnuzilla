@@ -70,10 +70,10 @@ sedhelper()
     local expr="$2"
     local md5=$(md5sum "${file}")
 
-    echo Running modification-aware sed: sed "${expr}" -i "${file}"
+    echo Running modification-aware sed: sed "${expr}" -i "${file}" 1>&2
     command sed "${expr}" -i "${file}"
     if [ "${md5}" = "$(md5sum "${file}")" ]; then
-        echo File "${file}" was not modified, stopping.
+        echo File "${file}" was not modified, stopping. 1>&2
         exit 1
     fi
 }
@@ -81,7 +81,7 @@ sedhelper()
 sed()
 {
     if ! echo $@ | grep -qw '\-i'; then
-        echo Running fallback sed: sed "$@"
+        echo Running fallback sed: sed "$@" 1>&2
         command sed "$@"
     else
         [ 1"$1" = "1-i" ] && shift
@@ -94,7 +94,7 @@ sed()
             if [ -f "${file}" ]; then
                 sedhelper "${file}" "${sedexpr}"
             else
-                echo File "${file}" does not exist, stopping.
+                echo File "${file}" does not exist, stopping. 1>&2
                 exit 1
             fi
         done
@@ -209,7 +209,7 @@ validate_env()
         echo -e "\nERROR: This script requires GnuPG:
  e.g.: 'gpg' from the Guix 'gnupg' package
        'gpg' from the Parabola 'gnupg' package
-       'gpg' from the Trisquel 'gnupg' package"
+       'gpg' from the Trisquel 'gnupg' package" 1>&2
         return 1
     fi
 
@@ -219,7 +219,7 @@ validate_env()
         echo -e "\nERROR: This script requires Mercurial:
  e.g.: 'hg' from the Guix 'mercurial' package
        'hg' from the Parabola 'mercurial' package
-       'hg' from the Trisquel 'mercurial' package"
+       'hg' from the Trisquel 'mercurial' package" 1>&2
         return 1
     fi
 
@@ -229,7 +229,7 @@ validate_env()
         echo -e "\nERROR: This script requires Wget:
  e.g.: 'wget' from the Guix 'wget' package
        'wget' from the Parabola 'wget' package
-       'wget' from the Trisquel 'wget' package"
+       'wget' from the Trisquel 'wget' package" 1>&2
         return 1
     fi
 
@@ -239,7 +239,7 @@ validate_env()
         echo -e "\nERROR: This script requires Python 3:
  e.g.: 'python3' from the Guix 'python' package
        'python3' from the Parabola 'python' package
-       'python3' from the Trisquel 'python3' package"
+       'python3' from the Trisquel 'python3' package" 1>&2
         return 1
     fi
 
@@ -249,7 +249,7 @@ validate_env()
         echo -e "\nERROR: This script requires Python 3 jsonschema:
  e.g.: 'jsonschema' from the Guix 'python-jsonschema' package
        'jsonschema' from the Parabola 'python-jsonschema' package
-       'jsonschema' from the Trisquel 'python3-jsonschema' package"
+       'jsonschema' from the Trisquel 'python3-jsonschema' package" 1>&2
         return 1
     fi
 }
