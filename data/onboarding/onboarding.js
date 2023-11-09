@@ -228,7 +228,6 @@ this._bundle = Services.strings.createBundle("chrome://onboarding/locale/onboard
     closer.style="clear:both";
     settingsblock.appendChild(closer);
     settingsblock.appendChild(this.newcheckbox("addon", null, "jid1-KtlZuoiikVfFew@jetpack", "GNU LibreJS", "Block nonfree <a href=\"https://www.gnu.org/software/librejs/\">JavaScript</a>."));
-//    settingsblock.appendChild(this.newcheckbox("addon", null, "https-everywhere@eff.org", "HTTPS Everywhere", "Extension that encrypts your communications with many major websites, making your browsing more secure."));
     settingsblock.appendChild(this.newcheckbox("addon", null, "uBlock0@raymondhill.net", "uBlock Origin", "Block ads and other intrusing trackers."));
     settingsblock.appendChild(this.newcheckbox("addon", null, "SubmitMe@0xbeef.coffee", "Reveal hidden HTML", "Unhides hidden HTML. Also, has a tool that fixes some websites with broken form validation Javascript by forcing an HTTP post."));
     settingsblock.appendChild(this.newcheckbox("addon", null, "tprb.addon@searxes.danwin1210.me", "Block third-party requests", "Prevents the browser from connecting to third-party resource without your consent."));
