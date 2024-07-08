@@ -15,19 +15,22 @@ const targets = [
     when updating this list:
   */
 const redirects = [
+  "https://yewtu.be",
   "https://yt.artemislena.eu",
-  "https://invidious.slipfox.xyz",
+  "https://invidious.flokinet.to",
   "https://invidious.privacydev.net",
-  "https://iv.ggtyler.dev",
-  "https://inv.zzls.xyz",
+  "https://iv.melmac.space",
+  "https://inv.nadeko.net",
   "https://inv.tux.pizza",
-  "https://inv.citw.lgbt",
-  "https://invidious.io.lol",
+  "https://invidious.protokolla.fi",
   "https://yt.drgnz.club",
-  "https://invidious.asir.dev",
-  "https://anontube.lvkaszus.pl",
+  "https://inv.us.projectsegfau.lt",
+  "https://invidious.jing.rocks",
+  "https://invidious.reallyaweso.me",
+  "https://invidious.materialio.us",
   "http://ng27owmagn5amdm7l5s3rsqxwscl5ynppnis5dqcasogkyxcfqn7psid.onion",
-  "http://inv.zzlsghu6mvvwyy75mvga6gaf4znbp3erk5xwfzedb4gg6qqh2j6rlvid.onion",
+  "http://invidious.g4c3eya4clenolymqbpgwz3q3tawoxw56yhzk4vugqrl6dtu3ejvhjid.onion",
+  "http://inv.nadekonw7plitnjuawu6ytjsl7jlglk2t6pyq6eftptmiv3dvqndwvyd.onion",
 ];
 
 export default {
