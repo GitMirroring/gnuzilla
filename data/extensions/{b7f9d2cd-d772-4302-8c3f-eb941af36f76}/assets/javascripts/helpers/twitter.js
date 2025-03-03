@@ -19,6 +19,7 @@ const targets = [
   */
 const redirects = [
   "https://nitter.privacydev.net",
+  "https://xcancel.com",
   "http://nitter.pjsfkvpxlinjamtawaksbnnaqs2fc2mtvmozrzckxh7f3kis6yea25ad.onion",
   "http://nitter.g4c3eya4clenolymqbpgwz3q3tawoxw56yhzk4vugqrl6dtu3ejvhjid.onion",
 ];

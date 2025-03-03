@@ -49,9 +49,7 @@
     {
       "matches": [
         "*://inv.nadeko.net/*",
-        "*://invidious.privacydev.net/*",
-        "*://invidious.nerdvpn.de/*",
-        "*://invidious.g4c3eya4clenolymqbpgwz3q3tawoxw56yhzk4vugqrl6dtu3ejvhjid.onion/*"
+        "*://inv.nadekonw7plitnjuawu6ytjsl7jlglk2t6pyq6eftptmiv3dvqndwvyd.onion/*"
       ],
       "js": [
         "assets/javascripts/persist-invidious-prefs.js"

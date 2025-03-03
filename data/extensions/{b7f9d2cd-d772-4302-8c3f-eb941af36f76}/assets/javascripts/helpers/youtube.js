@@ -17,9 +17,7 @@ const targets = [
   */
 const redirects = [
   "https://inv.nadeko.net",
-  "https://invidious.privacydev.net",
-  "https://invidious.nerdvpn.de",
-  "http://invidious.g4c3eya4clenolymqbpgwz3q3tawoxw56yhzk4vugqrl6dtu3ejvhjid.onion",
+  "http://inv.nadekonw7plitnjuawu6ytjsl7jlglk2t6pyq6eftptmiv3dvqndwvyd.onion",
 ];
 
 export default {
