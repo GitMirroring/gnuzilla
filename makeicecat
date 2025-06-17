@@ -21,12 +21,12 @@
 
 
 # metadata
-readonly FFMAJOR=115
-readonly FFMINOR=24
+readonly FFMAJOR=128
+readonly FFMINOR=12
 readonly FFSUB=0
 readonly FFBUILD=1
 readonly GNUVERSION=1
-readonly SOURCEBALL_CHECKSUM='81b95a58160afbae72b45c58f818c6ce992f53547e5ea78efbb2c59e864e4200'
+readonly SOURCEBALL_CHECKSUM='2bedeb86c6cb16cd3fce88d42ae4e245bafe2c6e9221ba8e445b8e02e89d973f'
 readonly SOURCEBALL_SIGNINGKEY='14F26682D0916CDD81E37B6D61B7B526D98F0353'
 readonly FFVERSION=${FFMAJOR}.${FFMINOR}.${FFSUB}
 readonly SOURCEBALL=firefox-${FFVERSION}esr.source.tar.xz
@@ -40,9 +40,10 @@ readonly ADDONS_URL=www.gnu.org/software/gnuzilla/addons.html
 readonly LIST_URL=lists.gnu.org/mailman/listinfo/bug-gnuzilla
 
 # l10n
-readonly L10N_URL=https://hg.mozilla.org/l10n-central
-readonly L10N_CMP_URL=https://hg.mozilla.org/l10n/compare-locales
-readonly L10N_CMP_REV=RELEASE_8_1_0
+readonly L10N_URL=https://github.com/mozilla-l10n/firefox-l10n
+readonly L10N_REV=fcd0300e8478d1ec4d1c097a073ddb8e1e0351e3
+readonly L10N_CMP_URL=https://github.com/mozilla/compare-locales
+readonly L10N_CMP_REV=RELEASE_9_0_4
 readonly L10N_PREFS_DIR=browser/chrome/browser/preferences
 readonly L10N_DTD_FILE=${L10N_PREFS_DIR}/advanced-scripts.dtd
 readonly PREFS_IN_FILE=browser/locales/en-US/browser/preferences/preferences.ftl
@@ -171,7 +172,7 @@ sort_inner_list()
         read -r line || fail "sort_inner_list: end line not found"
         [ "$line" != "$end_line" ] || break
         echo -E "$line"
-    done | sort
+    done | sort --ignore-case
 
     echo -E "$end_line"
     while read -r line; do
@@ -204,13 +205,13 @@ validate_env()
         return 1
     fi
 
-    # verify that Mercurial is available
-    if ! which hg &> /dev/null
+    # verify that Git is available
+    if ! which git &> /dev/null
     then
-        echo -e "\nERROR: This script requires Mercurial:
- e.g.: 'hg' from the Guix 'mercurial' package
-       'hg' from the Parabola 'mercurial' package
-       'hg' from the Trisquel 'mercurial' package"
+        echo -e "\nERROR: This script requires Git:
+ e.g.: 'git' from the Guix 'git' package
+       'git' from the Parabola 'git' package
+       'git' from the Trisquel 'git' package"
         return 1
     fi
 
@@ -297,36 +298,21 @@ extract_sources()
 
 fetch_l10n()
 {
-    cd l10n
-
+    git clone --depth=1 --revision=${L10N_REV} ${L10N_URL} l10n
+    rm -rf l10n/.git*
+    mkdir ${SOURCEDIR}/l10n
     while read lang; do
-        # download only one language-pack in devel mode
-        ! (( DEVEL )) || [[ "$(echo ${lang} | cut -d' ' -f1)" == "es-ES" ]] || continue
-
         lang=$(echo ${lang} | cut -d' ' -f1)
+        [ ${lang} = en-US ] && continue
+        [ -d l10n/${lang} ] || fail "fetch_l10n: locale ${lang} missing from l10n git repository"
+        mkdir -p l10n/${lang}/${L10N_PREFS_DIR}
+        touch l10n/${lang}/${L10N_DTD_FILE}
+        cp -a l10n/${lang} ${SOURCEDIR}/l10n/
+    done < ${SOURCEDIR}/browser/locales/shipped-locales
 
-        # download only language-packs which are not already in the working directory
-        if [[ -n "${lang}" && "${lang}" != 'en-US' && ! -f ${lang}/${L10N_DTD_FILE} ]]
-        then
-            echo "Cloning '${lang}' language repository"
-            hg clone ${L10N_URL}/${lang}
-            mkdir -p ${lang}/${L10N_PREFS_DIR}
-            touch ${lang}/${L10N_DTD_FILE}
-            rm -rf ${lang}/.hg*
-        fi
-    done < ../${SOURCEDIR}/browser/locales/shipped-locales
-    cd ..
-    cp -a l10n ${SOURCEDIR}/
-
-    if ! [[ -d compare-locales ]]
-    then
-        hg clone ${L10N_CMP_URL}/
-    fi
-    cd compare-locales/
-    hg checkout ${L10N_CMP_REV}
-    cd ..
+    git clone --depth=1 --revision=${L10N_CMP_REV} ${L10N_CMP_URL} compare-locales
+    rm -rf compare-locales/{.git*,.hg*}
     cp -a compare-locales ${SOURCEDIR}/l10n/
-    rm -rf ${SOURCEDIR}/l10n/compare-locales/{.git,.hg}*
 }
 
 apply_patches()
@@ -390,7 +376,7 @@ configure()
     # Disable activity-stream anti-features.
     # These are not condensed into a single sed script so that it
     # fails on individual commands that didn't change the source
-    local activity_stream=browser/components/newtab/lib/ActivityStream.jsm
+    local activity_stream=browser/components/newtab/lib/ActivityStream.sys.mjs
     sed '/^const DEFAULT_SITES/,/^])\;/c const DEFAULT_SITES = new Map\([[""]]\);' -i browser/components/newtab/lib/DefaultSites.sys.mjs
     sed '/"showSponsored"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/  "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
@@ -400,7 +386,6 @@ configure()
     sed 's/\(stories_referrer:\) .http.*/\1 "",/' -i $activity_stream
     sed 's/\(topics_endpoint:\) .http.*/\1 "",/' -i $activity_stream
     sed '/"telemetry\.structuredIngestion\.endpoint"/,/value/s/value: .*/value: "",/' -i $activity_stream
-    sed '/layout_endpoint:/,/http/s/"http.*/"",/' -i $activity_stream
     sed '/name: "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/name: "system\.topstories"/,/},/s/.*!!locales.*/false/' -i $activity_stream
     sed 's/Ubuntu, //' -i browser/components/newtab/css/activity-stream*.css
@@ -626,22 +611,6 @@ apply_branding()
     # Hide extra links in about box
     sed '/releaseNotes.link/d' -i ./browser/base/content/aboutDialog.xhtml
     sed '/description.*helpus/,/description/d' -i ./browser/base/content/aboutDialog.xhtml
-
-    # Remove tab-pickup elements from firefoxview
-    local sed_script='
-:top
-/<script.*tab-pickup-/,/<\/script>/d
-/<details.*tab-pickup-/,/<\/details>/d
-# The following arranges to append an additional line into
-# the pattern space and jump back to the top of the script
-# whenever "<" is present but ">" is not.
-/</{s/>/>/
-t
-N
-b top
-}
-'
-    sed -i "${sed_script}" browser/components/firefoxview/firefoxview.html
 }
 
 apply_batch_branding()
@@ -707,10 +676,6 @@ s/OpenSource/Free Software/g;
 
     sed 's/which are both/which are/; s/free<\/a> and/Free Software<\/a>./; />open source</d; s/free and open source licenses/Free Software licenses/ ' -i toolkit/content/license.html
 
-    sed 's/mozilla-bin/icecat-bin/' -i build/unix/run-mozilla.sh
-
-    find . -depth | grep run-mozilla | rename_files -e s/mozilla/icecat/g
-
     # do not alter useragent/platform/oscpu/etc with fingerprinting countermeasure, it makes things worse
     sed '/if (aShouldResistFingerprinting/,/}/s/^/\/\//' -i ./netwerk/protocol/http/nsHttpHandler.cpp
     sed '/If fingerprinting resistance is on/,/}/s/^/\/\//' -i ./dom/base/Navigator.cpp
@@ -727,6 +692,9 @@ s/OpenSource/Free Software/g;
 
     # Sort the list of DevToolsModules, which becomes unsorted by our rebranding
     sort_inner_list_in_file "DevToolsModules(" ")" devtools/client/netmonitor/src/connector/moz.build
+
+    # Ditto for browser/modules/moz.build
+    sort_inner_list_in_file "EXTRA_JS_MODULES += [" "]" browser/modules/moz.build
 
     # Copy js settings
     cat "${DATADIR}"/settings.js >> browser/app/profile/icecat.js

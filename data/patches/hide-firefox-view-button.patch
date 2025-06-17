@@ -1,0 +1,10 @@
+--- a/browser/base/content/navigator-toolbox.inc.xhtml
++++ b/browser/base/content/navigator-toolbox.inc.xhtml
+@@ -43,6 +43,7 @@
+                          oncommand="FirefoxViewHandler.openTab();"
+                          onmousedown="FirefoxViewHandler.openToolbarMouseEvent(event);"
+                          cui-areatype="toolbar"
++                         hidden="true"
+                          removable="true"/>
+ 
+           <tabs id="tabbrowser-tabs"

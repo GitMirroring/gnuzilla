@@ -179,6 +179,8 @@ pref("browser.search.geoip.url", "");
 pref("browser.search.geoSpecificDefaults", false);
 pref("browser.search.geoSpecificDefaults.url", "");
 pref("browser.search.modernConfig", false);
+// Disable network connectivity service
+pref("network.connectivity-service.enabled", false);
 // Disable captive portal detection
 pref("captivedetect.canonicalURL", "");
 pref("network.captive-portal-service.enabled", false);
@@ -258,9 +260,13 @@ pref ("extensions.getAddons.search.browseURL", "https://gnuzilla.gnu.org/mozzare
 pref ("extensions.getAddons.get.url", "https://gnuzilla.gnu.org/mozzarella");
 pref ("extensions.getAddons.link.url", "https://gnuzilla.gnu.org/mozzarella");
 pref ("extensions.getAddons.discovery.api_url", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.getAddons.browserMappings.url", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.recommendations.privacyPolicyUrl", "https://gnuzilla.gnu.org/mozzarella");
+pref ("extensions.recommendations.themeRecommendationUrl", "https://gnuzilla.gnu.org/mozzarella");
 
 pref ("extensions.systemAddon.update.url", "");
 pref ("extensions.systemAddon.update.enabled", false);
+pref ("extensions.getAddons.cache.enabled", false);
 
 // FIXME: find better URLs for these:
 pref ("extensions.getAddons.langpacks.url", "https://gnuzilla.gnu.org/mozzarella");

@@ -3,6 +3,7 @@
 #    Copyright (C) 2020, 2021  grizzlyuser <grizzlyuser@protonmail.com>
 #    Copyright (C) 2020, 2021  Ruben Rodriguez <ruben@gnu.org>
 #    Copyright (C) 2021  Amin Bandali <bandali@gnu.org>
+#    Copyright (C) 2025  Mark H Weaver <mhw@netris.org>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -24,6 +25,7 @@ import time
 import copy
 import argparse
 import pathlib
+import re
 from collections import namedtuple
 from jsonschema import validate
 
@@ -152,7 +154,7 @@ class SearchConfig(RemoteSettings):
         'main/search-config.json',
     )
     SCHEMA_PATH = arguments.MAIN_PATH / \
-        'toolkit/components/search/schema/search-engine-config-schema.json'
+        'toolkit/components/search/schema/search-config-schema.json'
     OUTPUT_PATH = JSON_PATHS[0]
 
     _DUCKDUCKGO_SEARCH_ENGINE_ID = 'ddg@search.mozilla.org'
@@ -186,6 +188,68 @@ class SearchConfig(RemoteSettings):
             general_specifier['default'] = 'yes'
 
         return search_engine
+
+
+class SearchConfigV2(RemoteSettings):
+    JSON_PATHS = (
+        RemoteSettings.DUMPS_PATH_ABSOLUTE /
+        'main/search-config-v2.json',
+    )
+    SCHEMA_PATH = arguments.MAIN_PATH / \
+        'toolkit/components/search/schema/search-config-v2-schema.json'
+    OUTPUT_PATH = JSON_PATHS[0]
+
+    _DUCKDUCKGO_SEARCH_ENGINE_ID = 'ddg'
+    _REDDIT_SEARCH_ENGINE_ID = 'reddit'
+
+    @classmethod
+    def should_drop_record(cls, record):
+        return (record['recordType'] == 'engine' and
+                record['identifier'] not in (
+                    cls._DUCKDUCKGO_SEARCH_ENGINE_ID,
+                    cls._REDDIT_SEARCH_ENGINE_ID ) and
+                not re.match('wikipedia', record['identifier']))
+
+    @classmethod
+    def process_record(cls, record):
+        if record['recordType'] == 'engine':
+            if record['identifier'] == cls._DUCKDUCKGO_SEARCH_ENGINE_ID:
+                del record['variants'][1:]
+                del record['variants'][0]['subVariants']
+                del record['base']['urls']['search']['params']
+                record['base']['urls']['search']['base'] = "https://html.duckduckgo.com/html"
+        if record['recordType'] == 'defaultEngines':
+            record['globalDefault'] = cls._DUCKDUCKGO_SEARCH_ENGINE_ID
+            record['specificDefaults'] = []
+        return record
+
+
+class SearchConfigOverrides(RemoteSettings):
+    JSON_PATHS = (
+        RemoteSettings.DUMPS_PATH_ABSOLUTE /
+        'main/search-config-overrides.json',
+    )
+    SCHEMA_PATH = arguments.MAIN_PATH / \
+        'toolkit/components/search/schema/search-config-overrides-schema.json'
+    OUTPUT_PATH = JSON_PATHS[0]
+
+    @classmethod
+    def should_drop_record(cls, record):
+        return True
+
+
+class SearchConfigOverridesV2(RemoteSettings):
+    JSON_PATHS = (
+        RemoteSettings.DUMPS_PATH_ABSOLUTE /
+        'main/search-config-overrides-v2.json',
+    )
+    SCHEMA_PATH = arguments.MAIN_PATH / \
+        'toolkit/components/search/schema/search-config-overrides-v2-schema.json'
+    OUTPUT_PATH = JSON_PATHS[0]
+
+    @classmethod
+    def should_drop_record(cls, record):
+        return True
 
 
 class TippyTopSites:
@@ -231,7 +295,9 @@ class TopSites(RemoteSettings):
 
 # To reflect the latest timestamps, Changes class should always come after
 # all other RemoteSettings subclasses
-processors = (SearchConfig, Changes)
+processors = (SearchConfig,   SearchConfigOverrides,
+              SearchConfigV2, SearchConfigOverridesV2,
+              Changes)
 
 for processor in processors:
     parsed_jsons = []
