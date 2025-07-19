@@ -189,6 +189,23 @@ sort_inner_list_in_file()
     sort_inner_list "$start_line" "$end_line" < "$file" > "$file.tmp" && mv -- "$file.tmp" "$file"
 }
 
+git_thin_clone_revision()
+(
+    [ $# -eq 3 ] || fail "git_thin_clone_revision: expected 3 arguments, got $#"
+    local revision="$1"
+    local url="$2"
+    local dir="$3"
+
+    # With Git 2.49.0 or later, the following command would suffice:
+    # git clone --depth=1 --revision="$revision" "$url" "$dir"
+
+    git init "$dir"
+    cd "$dir"
+    git remote add origin "$url"
+    git fetch --depth=1 origin "$revision"
+    git checkout "$revision"
+)
+
 ###############################################################################
 # main functions
 ###############################################################################
@@ -298,7 +315,7 @@ extract_sources()
 
 fetch_l10n()
 {
-    git clone --depth=1 --revision=${L10N_REV} ${L10N_URL} l10n
+    git_thin_clone_revision ${L10N_REV} ${L10N_URL} l10n
     rm -rf l10n/.git*
     mkdir ${SOURCEDIR}/l10n
     while read lang; do
@@ -310,7 +327,7 @@ fetch_l10n()
         cp -a l10n/${lang} ${SOURCEDIR}/l10n/
     done < ${SOURCEDIR}/browser/locales/shipped-locales
 
-    git clone --depth=1 --revision=${L10N_CMP_REV} ${L10N_CMP_URL} compare-locales
+    git clone --depth=1 --branch=${L10N_CMP_REV} ${L10N_CMP_URL} compare-locales
     rm -rf compare-locales/{.git*,.hg*}
     cp -a compare-locales ${SOURCEDIR}/l10n/
 }
