@@ -1,10 +1,10 @@
---- a/browser/base/content/navigator-toolbox.inc.xhtml
-+++ b/browser/base/content/navigator-toolbox.inc.xhtml
-@@ -43,6 +43,7 @@
-                          oncommand="FirefoxViewHandler.openTab();"
-                          onmousedown="FirefoxViewHandler.openToolbarMouseEvent(event);"
-                          cui-areatype="toolbar"
-+                         hidden="true"
-                          removable="true"/>
+--- a/browser/base/content/navigator-toolbox.inc.xhtml	2025-08-12 02:31:44.000000000 +0900
++++ b/browser/base/content/navigator-toolbox.inc.xhtml	2025-08-26 21:10:15.709368257 +0900
+@@ -41,6 +41,7 @@
+                        role="button"
+                        aria-pressed="false"
+                        cui-areatype="toolbar"
++                       hidden="true"
+                        removable="true"/>
  
-           <tabs id="tabbrowser-tabs"
+         <tabs id="tabbrowser-tabs"

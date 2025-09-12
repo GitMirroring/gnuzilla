@@ -148,48 +148,6 @@ class Changes(RemoteSettings):
         return File(cls.OUTPUT_PATH, changes)
 
 
-class SearchConfig(RemoteSettings):
-    JSON_PATHS = (
-        RemoteSettings.DUMPS_PATH_ABSOLUTE /
-        'main/search-config.json',
-    )
-    SCHEMA_PATH = arguments.MAIN_PATH / \
-        'toolkit/components/search/schema/search-config-schema.json'
-    OUTPUT_PATH = JSON_PATHS[0]
-
-    _DUCKDUCKGO_SEARCH_ENGINE_ID = 'ddg@search.mozilla.org'
-
-    @classmethod
-    def should_drop_record(cls, search_engine):
-        return search_engine['webExtension']['id'] not in (
-            cls._DUCKDUCKGO_SEARCH_ENGINE_ID, 'wikipedia@search.mozilla.org')
-
-    @classmethod
-    def process_record(cls, search_engine):
-        [search_engine.pop(key, None)
-         for key in ['extraParams', 'telemetryId']]
-
-        general_specifier = {}
-        for specifier in search_engine['appliesTo'].copy():
-            if 'application' in specifier:
-                if 'distributions' in specifier['application']:
-                    search_engine['appliesTo'].remove(specifier)
-                    continue
-                specifier['application'].pop('extraParams', None)
-
-            if 'included' in specifier and 'everywhere' in specifier[
-                    'included'] and specifier['included']['everywhere']:
-                general_specifier = specifier
-
-        if not general_specifier:
-            general_specifier = {'included': {'everywhere': True}}
-            search_engine['appliesTo'].insert(0, general_specifier)
-        if search_engine['webExtension']['id'] == cls._DUCKDUCKGO_SEARCH_ENGINE_ID:
-            general_specifier['default'] = 'yes'
-
-        return search_engine
-
-
 class SearchConfigV2(RemoteSettings):
     JSON_PATHS = (
         RemoteSettings.DUMPS_PATH_ABSOLUTE /
@@ -222,20 +180,6 @@ class SearchConfigV2(RemoteSettings):
             record['globalDefault'] = cls._DUCKDUCKGO_SEARCH_ENGINE_ID
             record['specificDefaults'] = []
         return record
-
-
-class SearchConfigOverrides(RemoteSettings):
-    JSON_PATHS = (
-        RemoteSettings.DUMPS_PATH_ABSOLUTE /
-        'main/search-config-overrides.json',
-    )
-    SCHEMA_PATH = arguments.MAIN_PATH / \
-        'toolkit/components/search/schema/search-config-overrides-schema.json'
-    OUTPUT_PATH = JSON_PATHS[0]
-
-    @classmethod
-    def should_drop_record(cls, record):
-        return True
 
 
 class SearchConfigOverridesV2(RemoteSettings):
@@ -295,8 +239,7 @@ class TopSites(RemoteSettings):
 
 # To reflect the latest timestamps, Changes class should always come after
 # all other RemoteSettings subclasses
-processors = (SearchConfig,   SearchConfigOverrides,
-              SearchConfigV2, SearchConfigOverridesV2,
+processors = (SearchConfigV2, SearchConfigOverridesV2,
               Changes)
 
 for processor in processors:

@@ -1,16 +1,16 @@
---- a/browser/base/content/aboutDialog.xhtml
-+++ b/browser/base/content/aboutDialog.xhtml
-@@ -148,7 +148,6 @@
+--- a/browser/base/content/aboutDialog.xhtml	2025-08-26 21:23:08.866394736 +0900
++++ b/browser/base/content/aboutDialog.xhtml	2025-08-26 21:23:19.986408921 +0900
+@@ -139,7 +139,6 @@
        <hbox pack="center">
          <label is="text-link" class="bottom-link" useoriginprincipal="true" href="about:license" data-l10n-id="bottomLinks-license"/>
-         <label is="text-link" class="bottom-link" useoriginprincipal="true" href="about:rights" data-l10n-id="bottomLinks-rights"/>
--        <label is="text-link" class="bottom-link" href="https://www.mozilla.org/privacy/?utm_source=firefox-browser&#38;utm_medium=firefox-desktop&#38;utm_campaign=about-dialog" data-l10n-id="bottomLinks-privacy"/>
+         <label is="text-link" class="bottom-link" href="https://www.mozilla.org/about/legal/terms/firefox/" data-l10n-id="bottom-links-terms"/>
+-        <label is="text-link" class="bottom-link" href="https://www.mozilla.org/privacy/firefox/?utm_source=firefox-browser&#38;utm_medium=firefox-desktop&#38;utm_campaign=about-dialog" data-l10n-id="bottom-links-privacy"/>
        </hbox>
        <description id="trademark" data-l10n-id="trademarkInfo"></description>
      </vbox>
---- a/browser/base/content/aboutDialog.css
-+++ b/browser/base/content/aboutDialog.css
-@@ -38,10 +38,9 @@
+--- a/browser/base/content/aboutDialog.css	2025-08-26 21:26:43.618669160 +0900
++++ b/browser/base/content/aboutDialog.css	2025-08-26 21:31:54.207067616 +0900
+@@ -32,10 +32,9 @@
  #rightBox {
    background-image: url("chrome://branding/content/about-wordmark.svg");
    background-repeat: no-repeat;
@@ -19,6 +19,9 @@
    padding-top: 38px;
 -  margin-top: 20px;
 +  margin-top: 60px;
- }
- 
+   /* We don't want this box to contribute arbitrarily to the intrinsic size of
+    * the dialog, so set the width to a reasonable size, but let it flex to take
+    * all available space. */
+--- a/browser/base/content/aboutDialog.css
++++ b/browser/base/content/aboutDialog.css
  #rightBox:-moz-locale-dir(rtl) {

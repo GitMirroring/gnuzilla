@@ -21,12 +21,13 @@
 
 
 # metadata
-readonly FFMAJOR=128
-readonly FFMINOR=14
+readonly FFMAJOR=140
+readonly FFMINOR=2
 readonly FFSUB=0
 readonly FFBUILD=1
 readonly GNUVERSION=1
-readonly SOURCEBALL_CHECKSUM='93b9ef6229f41cb22ff109b95bbf61a78395a0fe4b870192eeca22947cb09a53'
+# SHA-256
+readonly SOURCEBALL_CHECKSUM='956dce675c3b706d563caf07ed3ca9af632ab830be710dfd4351da78a0a2ef55'
 readonly SOURCEBALL_SIGNINGKEY='14F26682D0916CDD81E37B6D61B7B526D98F0353'
 readonly FFVERSION=${FFMAJOR}.${FFMINOR}.${FFSUB}
 readonly SOURCEBALL=firefox-${FFVERSION}esr.source.tar.xz
@@ -41,7 +42,7 @@ readonly LIST_URL=lists.gnu.org/mailman/listinfo/bug-gnuzilla
 
 # l10n
 readonly L10N_URL=https://github.com/mozilla-l10n/firefox-l10n
-readonly L10N_REV=fcd0300e8478d1ec4d1c097a073ddb8e1e0351e3
+readonly L10N_REV=a0c1ffda4ed19c0399e4175610361179e09829de
 readonly L10N_CMP_URL=https://github.com/mozilla/compare-locales
 readonly L10N_CMP_REV=RELEASE_9_0_4
 readonly L10N_PREFS_DIR=browser/chrome/browser/preferences
@@ -377,7 +378,7 @@ configure()
     sed '/"datareporting\.healthreport\.uploadEnabled"/s/true/false/' -i modules/libpref/init/all.js
 
     # Custom privacy statement link
-    sed "s|https://www\\.mozilla\\.org/legal/privacy/|https://${LEGALINFO_URL}|" -i ./browser/app/profile/firefox.js ./toolkit/content/aboutRights.xhtml
+    sed "s|https://www\\.mozilla\\.org/legal/privacy/|https://${LEGALINFO_URL}|" -i ./browser/app/profile/firefox.js
 
     # Sanitize lists
     local plugin_file
@@ -393,8 +394,8 @@ configure()
     # Disable activity-stream anti-features.
     # These are not condensed into a single sed script so that it
     # fails on individual commands that didn't change the source
-    local activity_stream=browser/components/newtab/lib/ActivityStream.sys.mjs
-    sed '/^const DEFAULT_SITES/,/^])\;/c const DEFAULT_SITES = new Map\([[""]]\);' -i browser/components/newtab/lib/DefaultSites.sys.mjs
+    local activity_stream=browser/extensions/newtab/lib/ActivityStream.sys.mjs
+    sed '/^const DEFAULT_SITES/,/^])\;/c const DEFAULT_SITES = new Map\([[""]]\);' -i browser/extensions/newtab/lib/DefaultSites.sys.mjs
     sed '/"showSponsored"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/  "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/"section\.highlights\.includePocket"/,/value/s/value: true/value: false/' -i $activity_stream
@@ -405,11 +406,10 @@ configure()
     sed '/"telemetry\.structuredIngestion\.endpoint"/,/value/s/value: .*/value: "",/' -i $activity_stream
     sed '/name: "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/name: "system\.topstories"/,/},/s/.*!!locales.*/false/' -i $activity_stream
-    sed 's/Ubuntu, //' -i browser/components/newtab/css/activity-stream*.css
 
-    sed '/^]$/d' -i browser/components/newtab/data/content/tippytop/top_sites.json
-    sed 's/}$/},/' -i browser/components/newtab/data/content/tippytop/top_sites.json
-    cat << EOF >> browser/components/newtab/data/content/tippytop/top_sites.json
+    sed '/^]$/d' -i browser/components/topsites/content/tippytop/top_sites.json
+    sed 's/}$/},/' -i browser/components/topsites/content/tippytop/top_sites.json
+    cat << EOF >> browser/components/topsites/content/tippytop/top_sites.json
 {
   "domains": ["gnu.org"],
   "image_url": "images/gnu.png",
@@ -505,8 +505,8 @@ EOF
 }
 EOF
 
-    cp "${DATADIR}"/newtab/*.ico browser/components/newtab/data/content/tippytop/favicons/
-    cp "${DATADIR}"/newtab/*.png browser/components/newtab/data/content/tippytop/images/
+    cp "${DATADIR}"/newtab/*.ico browser/components/topsites/content/tippytop/favicons/
+    cp "${DATADIR}"/newtab/*.png browser/components/topsites/content/tippytop/images/
 
     # IceCat menu l10n
     /bin/sed '/appmenuitem-settings/,+1s/\(.*.label = \)\(.*\)/\1\2\nappmenuitem-icecat-settings =\n\1IceCat \2/' -i ./l10n/*/browser/browser/appmenu.ftl ./browser/locales/en-US/browser/appmenu.ftl
@@ -541,7 +541,6 @@ configure_mobile()
 
     cat << EOF >> mobile/android/confvars.sh
 # IceCat settings
-MOZ_APP_VENDOR=GNU
 MOZ_APP_VERSION=${FFVERSION}
 MOZ_PAY=0
 MOZ_SERVICES_HEALTHREPORT=0
@@ -550,7 +549,6 @@ MOZ_SERVICES_FXACCOUNTS=0
 MOZ_SERVICES_METRICS=0
 MOZ_DATA_REPORTING=0
 MOZ_NORMANDY=0
-MOZ_SERVICES_SYNC=0
 MOZ_DEVICES=0
 MOZ_ANDROID_GOOGLE_PLAY_SERVICES=0
 MOZ_ADDON_SIGNING=0
@@ -606,15 +604,6 @@ apply_branding()
 
     # Custom legal about pages
     find l10n -wholename '*/brand.ftl' | xargs /bin/sed 's/^trademarkInfo = .*/trademarkInfo = The IceCat logo is Copyright 2008-2015 Free Software Foundation, released under the terms of the GNU Lesser General Public License, version 3 or any later version./' -i
-    local string
-    for string in rights-intro-point-2 rights-intro-point-3 rights-intro-point-4 rights-intro-point-5 rights-intro-point-6 rights-webservices rights-safebrowsing
-    do
-        find -name aboutRights.ftl | xargs sed -i "s/^${string}.*/${string} = /"
-    done
-    for string in helpus community-2 community-exp
-    do
-        find -wholename '*/browser/aboutDialog.ftl' | xargs sed -i "s/^${string}.*/${string} = /"
-    done
     cp "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights.xhtml
     cp "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights-unbranded.xhtml
     sed -i 's|<a href="http://www\.mozilla\.org/">Mozilla Project</a>|<a href="http://www.gnu.org/">GNU Project</a>|g' browser/base/content/overrides/app-license.html
@@ -632,8 +621,10 @@ apply_branding()
 
 apply_batch_branding()
 {
-    find . -depth | grep -i fennec  | rename_files -e s/fennec/icecatmobile/g -e s/Fennec/IceCatMobile/g
-    find . -depth | grep -i firefox | rename_files -e s/firefox/icecat/g -e s/Firefox/IceCat/g
+    find . -depth | grep -i fennec |
+        rename_files -e s/fennec/icecatmobile/g -e s/Fennec/IceCatMobile/g
+    find . -depth | grep -i firefox |
+        rename_files -e s/firefox/icecat/g -e s/Firefox/IceCat/g
 
     echo "Running batch rebranding (this will take a while)"
     local sed_script="
@@ -672,7 +663,9 @@ s|https://www\\.mozilla\\.org/icecat/?utm_source=synceol|https://www.mozilla.org
 
 s|www\\.gnu\\.org/software/gnuzilla/icecat-help|libreplanet.org/wiki/Group:IceCat/Help|g;
 "
-    find . -type f -not -iregex '.*changelog.*' -not -iregex '.*copyright.*' -not -iregex '.*third_party/rust.*' -execdir /bin/sed --follow-symlinks -i "${sed_script}" '{}' ';'
+    find . -type f -not -iregex '.*changelog.*' -not -iregex '.*copyright.*' \
+         -not -iregex '.*third_party/rust.*' \
+         -execdir /bin/sed --follow-symlinks -i "${sed_script}" '{}' ';'
 
     find l10n -type f -execdir /bin/sed --follow-symlinks -i "s/from GNU/from Mozilla/g" '{}' ';'
 
@@ -713,27 +706,18 @@ s/OpenSource/Free Software/g;
     # Ditto for browser/modules/moz.build
     sort_inner_list_in_file "EXTRA_JS_MODULES += [" "]" browser/modules/moz.build
 
+    # Adjust the capitalization of IceCat to match the expected symbol
+    # names in build-time generated source files like TelemetryEventEnums.h.
+    sed 's/IceCatview/Icecatview/g' -i browser/components/icecatview/metrics.yaml
+
     # Copy js settings
     cat "${DATADIR}"/settings.js >> browser/app/profile/icecat.js
 
     cat << EOF >> browser/confvars.sh
 # IceCat settings
 MOZ_APP_BASENAME=IceCat
-MOZ_APP_UA_NAME=Firefox
-MOZ_APP_VENDOR=GNU
 MOZ_APP_VERSION=${FFVERSION}
-MOZ_APP_PROFILE=mozilla/icecat
-MOZ_PAY=0
-MOZ_SERVICES_HEALTHREPORT=0
-MOZ_SERVICES_HEALTHREPORTER=0
-MOZ_SERVICES_FXACCOUNTS=0
-MOZ_SERVICES_METRICS=0
 MOZ_DATA_REPORTING=0
-MOZ_NORMANDY=0
-MOZ_SERVICES_SYNC=0
-MOZ_DEVICES=0
-MOZ_ANDROID_GOOGLE_PLAY_SERVICES=0
-MOZ_ADDON_SIGNING=0
 EOF
 }
 
