@@ -18,7 +18,7 @@ const targets = [
     (const nitterInstances) when updating this list:
   */
 const redirects = [
-  "https://nitter.privacydev.net",
+  "https://nitter.tiekoetter.com",
   "https://xcancel.com",
   "http://nitter.pjsfkvpxlinjamtawaksbnnaqs2fc2mtvmozrzckxh7f3kis6yea25ad.onion",
   "http://nitter.g4c3eya4clenolymqbpgwz3q3tawoxw56yhzk4vugqrl6dtu3ejvhjid.onion",
