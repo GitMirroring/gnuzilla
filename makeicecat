@@ -624,7 +624,7 @@ apply_batch_branding()
     find . -depth | grep -i fennec |
         rename_files -e s/fennec/icecatmobile/g -e s/Fennec/IceCatMobile/g
     find . -depth | grep -i firefox |
-        rename_files -e s/firefox/icecat/g -e s/Firefox/IceCat/g
+        rename_files -e s/org.mozilla.firefox/org.gnu.icecat/g -e s/firefox/icecat/g -e s/Firefox/IceCat/g
 
     echo "Running batch rebranding (this will take a while)"
     local sed_script="
