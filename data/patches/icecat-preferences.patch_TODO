@@ -1,8 +1,6 @@
-diff --git a/browser/base/content/appmenu-viewcache.inc.xhtml b/browser/base/content/appmenu-viewcache.inc.xhtml
-index ec44a3b1a354..e469b754d93d 100644
 --- a/browser/base/content/appmenu-viewcache.inc.xhtml
 +++ b/browser/base/content/appmenu-viewcache.inc.xhtml
-@@ -139,6 +139,9 @@
+@@ -162,6 +162,9 @@
                       key="key_preferencesCmdMac"
  #endif
                       />
@@ -12,25 +10,21 @@ index ec44a3b1a354..e469b754d93d 100644
        <toolbarbutton id="appMenu-more-button2"
                       class="subviewbutton subviewbutton-nav"
                       data-l10n-id="appmenuitem-more-tools"
-diff --git a/browser/base/content/browser-menubar.inc b/browser/base/content/browser-menubar.inc
-index 01bca4ecb0de..7c755439d1d5 100644
---- a/browser/base/content/browser-menubar.inc
-+++ b/browser/base/content/browser-menubar.inc
-@@ -116,6 +116,8 @@
+--- a/browser/base/content/browser-menubar.inc.xhtml
++++ b/browser/base/content/browser-menubar.inc.xhtml
+@@ -123,6 +123,8 @@
                            />
  #endif
  #endif
-+              <menuitem id="menu_icecat_preferences"
-+	          data-l10n-id="appmenuitem-icecat-settings"/>
++                <menuitem id="menu_icecat_preferences"
++                   data-l10n-id="appmenuitem-icecat-settings"/>
                </menupopup>
              </menu>
  
-diff --git a/browser/base/content/browser-menubar.js b/browser/base/content/browser-menubar.js
-index 61ae54a0884c..6d4c315427bc 100644
 --- a/browser/base/content/browser-menubar.js
 +++ b/browser/base/content/browser-menubar.js
-@@ -16,6 +16,9 @@ document.addEventListener(
-         case "menu_preferences":
+@@ -14,6 +14,9 @@
+         case "menu_settings":
            openPreferences(undefined);
            break;
 +        case "menu_icecat_preferences":
@@ -39,11 +33,9 @@ index 61ae54a0884c..6d4c315427bc 100644
  
          // == view-menu ==
          case "menu_pageStyleNoStyle":
-diff --git a/browser/components/customizableui/content/panelUI.js b/browser/components/customizableui/content/panelUI.js
-index 689205034d9d..a80bbcfe2926 100644
 --- a/browser/components/customizableui/content/panelUI.js
 +++ b/browser/components/customizableui/content/panelUI.js
-@@ -379,6 +379,9 @@ const PanelUI = {
+@@ -438,6 +438,9 @@
        case "appMenu-settings-button":
          openPreferences();
          break;
