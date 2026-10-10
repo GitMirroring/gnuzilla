@@ -21,12 +21,12 @@
 
 
 # metadata
-readonly FFMAJOR=140
-readonly FFMINOR=17
+readonly FFMAJOR=153
+readonly FFMINOR=5
 readonly FFSUB=0
 readonly FFBUILD=1
 readonly GNUVERSION=1
-readonly SOURCEBALL_CHECKSUM='4d6ed3b18b2069c55bab12d8ba95da6013ac0b036d8a031df8b9f39a25d05c33'
+readonly SOURCEBALL_CHECKSUM='28714a7d4f9b38c7aafbe38022de7775a3d9cb3c1ebf19a567c26eb761e3410b'
 readonly SOURCEBALL_SIGNINGKEY='14F26682D0916CDD81E37B6D61B7B526D98F0353'
 readonly FFVERSION=${FFMAJOR}.${FFMINOR}.${FFSUB}
 readonly SOURCEBALL=firefox-${FFVERSION}esr.source.tar.xz
@@ -42,9 +42,9 @@ readonly LIST_URL=lists.gnu.org/mailman/listinfo/bug-gnuzilla
 # l10n
 readonly L10N_URL=https://github.com/mozilla-l10n/firefox-l10n
 # for L10N_REV, use the commit specified in browser/locales/l10n-changesets.json
-readonly L10N_REV=64046fdc97c1b1886a479dead61e6dc5428ae6e6
+readonly L10N_REV=5e42b46226b4e4b8722697bc020b18013c543eb5
 readonly L10N_CMP_URL=https://github.com/mozilla/compare-locales
-readonly L10N_CMP_REV=RELEASE_9_0_4
+readonly L10N_CMP_REV=RELEASE_9_0_5
 readonly L10N_PREFS_DIR=browser/chrome/browser/preferences
 readonly L10N_DTD_FILE=${L10N_PREFS_DIR}/advanced-scripts.dtd
 readonly PREFS_IN_FILE=browser/locales/en-US/browser/preferences/preferences.ftl
@@ -380,32 +380,28 @@ configure()
     # Custom privacy statement link
     sed "s|https://www\\.mozilla\\.org/legal/privacy/|https://${LEGALINFO_URL}|" -i ./browser/app/profile/firefox.js
 
-    # Sanitize lists
-    local plugin_file
-    local sort_tmpfile="$(mktemp -t makeicecat-XXXXXXXXXX)"
-    for plugin_file in $(find | grep searchplugins/list.txt)
-    do
-        /bin/sed /^$/d -i $plugin_file
-        sort -u $plugin_file > ${sort_tmpfile}
-        mv ${sort_tmpfile} $plugin_file
-        echo >> $plugin_file
-    done
-
     # Disable activity-stream anti-features.
     # These are not condensed into a single sed script so that it
     # fails on individual commands that didn't change the source
     local activity_stream=browser/extensions/newtab/lib/ActivityStream.sys.mjs
-    sed '/^const DEFAULT_SITES/,/^])\;/c const DEFAULT_SITES = new Map\([[""]]\);' -i browser/extensions/newtab/lib/DefaultSites.sys.mjs
+    sed '/^const DEFAULT_SITES_MAP/,/^])\;/c const DEFAULT_SITES_MAP = new Map\([[""]]\);' -i browser/extensions/newtab/lib/DefaultSites.sys.mjs
     sed '/"showSponsored"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/  "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
-    sed '/"section\.highlights\.includePocket"/,/value/s/value: true/value: false/' -i $activity_stream
-    sed '/read_more_endpoint:/,/http/s/"http.*/"",/' -i $activity_stream
-    sed '/stories_endpoint: `/,/}`,/c stories_endpoint: "",' -i $activity_stream
-    sed 's/\(stories_referrer:\) .http.*/\1 "",/' -i $activity_stream
-    sed 's/\(topics_endpoint:\) .http.*/\1 "",/' -i $activity_stream
+    sed '/"unifiedAds\.endpoint"/,/value/s/value: .*/value: "",/' -i $activity_stream
+    sed '/"weather\..*Endpoint"/,/value/s/value: .*/value: "",/' -i $activity_stream
+    sed '/"sports\..*Endpoint"/,/value/s/value: .*/value: "",/' -i $activity_stream
     sed '/"telemetry\.structuredIngestion\.endpoint"/,/value/s/value: .*/value: "",/' -i $activity_stream
-    sed '/name: "telemetry"/,/value/s/value: true/value: false/' -i $activity_stream
+    sed '/"discoverystream\.endpoints"/,/"http/s/"http.*",/"",/' -i $activity_stream
+    sed '/"discoverystream\.endpointSpocsClear"/,/value/s/value: .*/value: "",/' -i $activity_stream
     sed '/name: "system\.topstories"/,/},/s/.*!!locales.*/false/' -i $activity_stream
+
+    for name in adsfeed discoverystreamfeed externalcomponentsfeed favicon \
+                inferredpersonalizationfeed listsfeed newtabattributionfeed \
+                newtabmessaging sectionslayoutfeed smartshortcutsfeed \
+                sportsfeed telemetry wallpaperfeed weatherfeed
+    do
+        sed "/name: \"$name\"/,/value/s/value: true/value: false/" -i $activity_stream
+    done
 
     sed '/^]$/d' -i browser/components/topsites/content/tippytop/top_sites.json
     sed 's/}$/},/' -i browser/components/topsites/content/tippytop/top_sites.json
@@ -520,16 +516,6 @@ EOF
 
 configure_search()
 {
-    # Default DDG to HTML search.
-    cp -a browser/components/search/extensions/ddg browser/components/search/extensions/ddg-js
-    sed 's|/duckduckgo.com/|/html.duckduckgo.com/html/|' -i browser/components/search/extensions/ddg/manifest.json
-    sed 's|DuckDuckGo|DuckDuckGo (JavaScript)|' -i browser/components/search/extensions/ddg-js/manifest.json
-    sed 's|ddg@|ddg-js@|' -i browser/components/search/extensions/ddg-js/manifest.json
-    sed 's|@ddg|@ddgjs|; s|@duckduckgo|@duckduckgojs|' -i browser/components/search/extensions/ddg-js/manifest.json
-    # Disable redirect through ddg servers, as we spoof referers
-    sed 's/q=/kd=-1\&q=/' -i browser/components/search/extensions/ddg-js/manifest.json browser/components/search/extensions/ddg/manifest.json
-
-
     # Process various JSON pre-configuration dumps.
     python3 "${DATADIR}"/../tools/process-json-files.py . browser/components/extensions/schemas/
 }
@@ -596,23 +582,15 @@ apply_branding()
     # Disable preprocessor
     sed 's/_PP//' -i browser/branding/branding-common.mozbuild
 
-    # Delete stuff we don't use and that may contain trademarked logos
-    rm -rf ./browser/metro ./addon-sdk/source/doc/static-files/media ./b2g
-
     # Custom bookmarks
     remove_if_block_in_file "#ifndef NIGHTLY_BUILD" browser/base/content/default-bookmarks.html
 
     # Custom legal about pages
     find l10n -wholename '*/brand.ftl' | xargs /bin/sed 's/^trademarkInfo = .*/trademarkInfo = The IceCat logo is Copyright 2008-2015 Free Software Foundation, released under the terms of the GNU Lesser General Public License, version 3 or any later version./' -i
-    cp "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights.xhtml
-    cp "${DATADIR}"/aboutRights.xhtml toolkit/content/aboutRights-unbranded.xhtml
     sed -i 's|<a href="http://www\.mozilla\.org/">Mozilla Project</a>|<a href="http://www.gnu.org/">GNU Project</a>|g' browser/base/content/overrides/app-license.html
 
-    # Custom logo for about:preferences?entrypoint=menupanel#sync
-    cp "${DATADIR}"/branding/sync.png browser/themes/shared/fxa/logo.png
-
     # Hide mobile promo
-    echo ".fxaMobilePromo {  display: none !important; }" >> browser/themes/shared/preferences/preferences.inc.css
+    echo ".fxaMobilePromo {  display: none !important; }" >> browser/themes/shared/preferences/preferences.css
 
     # Hide extra links in about box
     sed '/releaseNotes.link/d' -i ./browser/base/content/aboutDialog.xhtml
@@ -641,6 +619,7 @@ s|mozilla\\.com/plugincheck|${ADDONS_URL}|g;
 s|www\\.mozilla\\.com/firefox/central|${INFO_URL}|g;
 s|www\\.mozilla.*/legal/privacy.*html|${LEGALINFO_URL}|g;
 s|www\\.mozilla.*/legal/privacy|${LEGALINFO_URL}|g;
+s|www\\.mozilla.*/legal/terms/firefox/|${LEGALINFO_URL}|g;
 
 s/Mozilla Firefox/GNU IceCat/g;
 s/firefox/icecat/g;
@@ -695,26 +674,21 @@ s/OpenSource/Free Software/g;
     sed "/mCompatIceCat.AssignLiteral/ s:IceCat/:Firefox/:" -i netwerk/protocol/http/nsHttpHandler.cpp
     sed "s/IceCat/Firefox/g" -i toolkit/components/resistfingerprinting/nsRFPService.cpp
 
-    find . -name region.properties | xargs -i /bin/sed 's_https://www\.mibbit.*__' -i {}
-
     # Set migrator scripts
     cp browser/components/migration/IceCatProfileMigrator.sys.mjs browser/components/migration/FirefoxProfileMigrator.sys.mjs
     sed 's/IceCat/Firefox/g; s/icecat/firefox/g' -i browser/components/migration/FirefoxProfileMigrator.sys.mjs
 
     # Don't mangle crate urls. This invalidates Cargo.lock and causes problems for fetching crates
     find . -name Cargo.toml | xargs /bin/sed 's|github.com/IceCatGraphics|github.com/FirefoxGraphics|' -i
-    # Rename local crate that is used in different places. Otherwise you have to tangle it in moz.build as well.
+    # Rename local crates that are used in different places. Otherwise you have to tangle them in moz.build as well.
     find . -name Cargo.lock | xargs /bin/sed 's|firefox-on-glean|icecat-on-glean|' -i
+    find . -name Cargo.lock | xargs /bin/sed 's|firefox-versioning|icecat-versioning|' -i
 
     # Sort the list of DevToolsModules, which becomes unsorted by our rebranding
     sort_inner_list_in_file "DevToolsModules(" ")" devtools/client/netmonitor/src/connector/moz.build
 
     # Ditto for browser/modules/moz.build
     sort_inner_list_in_file "EXTRA_JS_MODULES += [" "]" browser/modules/moz.build
-
-    # Adjust the capitalization of IceCat to match the expected symbol
-    # names in build-time generated source files like TelemetryEventEnums.h.
-    sed 's/IceCatview/Icecatview/g' -i browser/components/icecatview/metrics.yaml
 
     # Do not synchronize any preferences by default
     sed 's/^pref *("\(services\.sync\.prefs\.sync\.[-_.A-Za-z0-9]*\)", *true);/pref("\1", false);/' -i browser/app/profile/icecat.js
@@ -886,13 +860,8 @@ configure_onboarding()
 
 apply_bugfixes()
 {
-    # Fix CVE-2009-4029
-    sed 's/777/755/;' -i toolkit/crashreporter/google-breakpad/Makefile.in
-    #(cd toolkit/crashreporter/google-breakpad; aclocal)
-    #(cd toolkit/crashreporter/google-breakpad; automake)
-
     # Fix CVE-2012-3386
-    /bin/sed 's/chmod a+w/chmod u+w/' -i ./js/src/ctypes/libffi/Makefile.in ./toolkit/crashreporter/google-breakpad/Makefile.in ./toolkit/crashreporter/google-breakpad/src/third_party/glog/Makefile.in || true
+    /bin/sed 's/chmod a+w/chmod u+w/' -i ./toolkit/crashreporter/google-breakpad/src/third_party/glog/Makefile.in || true
 }
 
 finalize_sourceball()
