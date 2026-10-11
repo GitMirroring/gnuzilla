@@ -393,7 +393,6 @@ configure()
     sed '/"telemetry\.structuredIngestion\.endpoint"/,/value/s/value: .*/value: "",/' -i $activity_stream
     sed '/"discoverystream\.endpoints"/,/"http/s/"http.*",/"",/' -i $activity_stream
     sed '/"discoverystream\.endpointSpocsClear"/,/value/s/value: .*/value: "",/' -i $activity_stream
-    sed '/name: "system\.topsites"/,/value/s/value: true/value: false/' -i $activity_stream
     sed '/name: "system\.topstories"/,/},/s/.*!!locales.*/false/' -i $activity_stream
 
     for name in adsfeed discoverystreamfeed externalcomponentsfeed favicon \
@@ -620,6 +619,7 @@ s|mozilla\\.com/plugincheck|${ADDONS_URL}|g;
 s|www\\.mozilla\\.com/firefox/central|${INFO_URL}|g;
 s|www\\.mozilla.*/legal/privacy.*html|${LEGALINFO_URL}|g;
 s|www\\.mozilla.*/legal/privacy|${LEGALINFO_URL}|g;
+s|www\\.mozilla.*/legal/terms/firefox/|${LEGALINFO_URL}|g;
 
 s/Mozilla Firefox/GNU IceCat/g;
 s/firefox/icecat/g;
@@ -680,8 +680,9 @@ s/OpenSource/Free Software/g;
 
     # Don't mangle crate urls. This invalidates Cargo.lock and causes problems for fetching crates
     find . -name Cargo.toml | xargs /bin/sed 's|github.com/IceCatGraphics|github.com/FirefoxGraphics|' -i
-    # Rename local crate that is used in different places. Otherwise you have to tangle it in moz.build as well.
+    # Rename local crates that are used in different places. Otherwise you have to tangle them in moz.build as well.
     find . -name Cargo.lock | xargs /bin/sed 's|firefox-on-glean|icecat-on-glean|' -i
+    find . -name Cargo.lock | xargs /bin/sed 's|firefox-versioning|icecat-versioning|' -i
 
     # Sort the list of DevToolsModules, which becomes unsorted by our rebranding
     sort_inner_list_in_file "DevToolsModules(" ")" devtools/client/netmonitor/src/connector/moz.build

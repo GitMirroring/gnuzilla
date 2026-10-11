@@ -35,3 +35,12 @@
    margin-inline-start: 30px;
  }
  
+@@ -65,7 +64,7 @@
+ #release {
+   font-weight: var(--font-weight-bold);
+   font-size: 125%;
+-  margin-top: 10px;
++  margin-top: 90px;
+   margin-inline-start: 0;
+ }
+ 

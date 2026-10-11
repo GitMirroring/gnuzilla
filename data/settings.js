@@ -13,6 +13,9 @@ pref("plugins.hide_infobar_for_missing_plugin", true);
 pref("plugins.hide_infobar_for_outdated_plugin", true);
 pref("plugins.notifyMissingFlash", false);
 
+// Disable Settings Redesign 2025 for now
+pref("browser.settings-redesign.enabled", false);
+
 //https://developer.mozilla.org/en-US/docs/Web/API/MediaSource
 //pref("media.mediasource.enabled",true);
 
@@ -96,8 +99,6 @@ pref("network.protocol-handler.external.apt+http",true);
 // https://wiki.mozilla.org/Fingerprinting
 // http://www.browserleaks.com
 // http://fingerprint.pet-portal.eu
-pref("privacy.donottrackheader.enabled", true);
-pref("privacy.donottrackheader.value", 1);
 pref("dom.ipc.plugins.flash.subprocess.crashreporter.enabled", false);
 pref("browser.tabs.crashReporting.sendReport", false);
 pref("browser.safebrowsing.enabled", false);
@@ -109,6 +110,7 @@ pref("browser.safebrowsing.provider.google4.updateURL", "");
 pref("browser.safebrowsing.provider.google4.gethashURL", "");
 pref("browser.safebrowsing.provider.mozilla.gethashURL", "");
 pref("browser.safebrowsing.provider.mozilla.updateURL", "");
+pref("browser.preferences.config_warning.warningSafeBrowsing.dismissed", true);
 pref("services.sync.privacyURL", "https://www.gnu.org/software/gnuzilla/");
 pref("services.sync.syncedTabs.showRemoteIcons", false);
 pref("services.sync.engine.creditcards.available", false);
@@ -272,10 +274,11 @@ pref("app.update.staging.enabled", false);
 pref("app.update.service.enabled", false);
 pref("app.update.langpack.enabled", false);
 
-// Disable Generative AI features
+// Disable large language model (LLM) features
 pref("browser.ml.chat.enabled", false);
 pref("browser.ml.chat.shortcuts", false);
 pref("browser.ml.chat.sidebar", false);
+pref("browser.preferences.aiControls", false);
 
 // EME
 pref("media.eme.enabled", false);
@@ -489,7 +492,7 @@ pref("dom.push.enabled",false);
 // Disable recommended extensions
 pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons", false);
 pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features", false);
-pref("browser.newtabpage.activity-stream.asrouter.providers.snippets", "");
+pref("browser.newtabpage.activity-stream.asrouter.providers.snippets", "null");
 pref("extensions.htmlaboutaddons.discover.enabled", false);
 pref("extensions.htmlaboutaddons.recommendations.enabled", false);
 
