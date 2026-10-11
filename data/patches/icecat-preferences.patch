@@ -62,7 +62,7 @@
  <html:setting-group groupid="history2" data-category="panePrivacy" hidden="true" data-srd-migrated=""/>
  
 +<!-- IceCat-specific -->
-+<html:setting-group groupid="iceCatPrivacy" data-category="panePrivacy" data-subcategory="permissions" hidden="true" data-srd-migrated=""/>
++<html:setting-group groupid="iceCatPrivacy" data-category="panePrivacy" data-subcategory="iceCatPrivacy" hidden="true" data-srd-migrated=""/>
 +
  <!-- Permissions -->
  <html:setting-group groupid="permissions" data-category="panePrivacy" data-subcategory="permissions" hidden="true" data-srd-migrated=""></html:setting-group>
